@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="IdPPlatform.API/IdPPlatform.API.csproj" />
+  <Project Path="IdPPlatform.Application/IdPPlatform.Application.csproj" />
+  <Project Path="IdPPlatform.Domain/IdPPlatform.Domain.csproj" />
+  <Project Path="IdPPlatform.Infrastructure/IdPPlatform.Infrastructure.csproj" />
+</Solution>

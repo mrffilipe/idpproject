@@ -1,0 +1,55 @@
+using System.Security.Claims;
+using IdPPlatform.Application.Services.UserScope;
+using Microsoft.AspNetCore.Http;
+
+namespace IdPPlatform.Infrastructure.Services.UserScope;
+
+public sealed class HttpUserScope : IUserScope
+{
+    private readonly IHttpContextAccessor _httpContextAccessor;
+
+    public HttpUserScope(IHttpContextAccessor httpContextAccessor)
+    {
+        _httpContextAccessor = httpContextAccessor;
+    }
+
+    public bool IsAuthenticated => _httpContextAccessor.HttpContext?.User?.Identity?.IsAuthenticated == true;
+
+    public Guid UserId => GetGuid("uid");
+
+    public Guid? SessionId => GetNullableGuid("sid");
+
+    public Guid? TenantId => GetNullableGuid("tid");
+
+    public Guid? MembershipId => GetNullableGuid("mid");
+
+    public IReadOnlyList<string> TenantRoles => _httpContextAccessor.HttpContext?.User?
+        .FindAll("trole")
+        .Select(x => x.Value.Trim().ToLowerInvariant())
+        .Where(x => x.Length > 0)
+        .Distinct(StringComparer.OrdinalIgnoreCase)
+        .ToList() ?? [];
+
+    public bool HasAnyTenantRole(params string[] roleKeys)
+    {
+        var roles = TenantRoles.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        return roleKeys.Any(roles.Contains);
+    }
+
+    private Guid GetGuid(string claimName)
+    {
+        var raw = GetString(claimName);
+        return Guid.TryParse(raw, out var value) ? value : Guid.Empty;
+    }
+
+    private Guid? GetNullableGuid(string claimName)
+    {
+        var raw = GetString(claimName);
+        return Guid.TryParse(raw, out var value) ? value : null;
+    }
+
+    private string? GetString(string claimName)
+    {
+        return _httpContextAccessor.HttpContext?.User?.FindFirstValue(claimName);
+    }
+}

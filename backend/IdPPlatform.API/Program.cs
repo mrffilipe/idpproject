@@ -1,0 +1,91 @@
+using System.Threading.RateLimiting;
+using System.Text.Json.Serialization;
+using Asp.Versioning;
+using IdPPlatform.API.Middlewares;
+using IdPPlatform.Infrastructure.Configurations;
+using IdPPlatform.Infrastructure.Extensions;
+using IdPPlatform.Infrastructure.Persistence;
+using TenancyKit.AspNetCore;
+using TenancyKit.Core;
+
+var builder = WebApplication.CreateBuilder(args);
+
+builder.Services
+    .AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    });
+
+builder.Services
+    .AddApiVersioning(options =>
+    {
+        options.DefaultApiVersion = new ApiVersion(1, 0);
+        options.AssumeDefaultVersionWhenUnspecified = true;
+        options.ReportApiVersions = true;
+        options.ApiVersionReader = new UrlSegmentApiVersionReader();
+    });
+
+builder.Services.AddInfrastructure(builder.Configuration);
+
+builder.Services.AddRateLimiter(options =>
+{
+    var rateLimitOptions = builder.Configuration.GetSection(RateLimitOptions.Section).Get<RateLimitOptions>()
+        ?? new RateLimitOptions();
+
+    options.AddPolicy("auth_exchange", context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = rateLimitOptions.ExchangePermitLimit,
+                Window = TimeSpan.FromMinutes(rateLimitOptions.ExchangeWindowMinutes),
+                QueueLimit = 0
+            }));
+
+    options.AddPolicy("auth_refresh", context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = rateLimitOptions.RefreshPermitLimit,
+                Window = TimeSpan.FromMinutes(rateLimitOptions.RefreshWindowMinutes),
+                QueueLimit = 0
+            }));
+});
+
+builder.Services
+    .AddTenancyKit<TenantInfoAdapter>(options =>
+    {
+        options.UseMissingTenantBehavior(MissingTenantBehavior.Ignore);
+        options.UseClaimsTenantResolver();
+        options.UseStore<TenantStore>();
+    });
+
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy => policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod());
+});
+
+var app = builder.Build();
+
+app.UseMiddleware<ApplicationExceptionMiddleware>();
+
+if (app.Environment.IsDevelopment() || app.Environment.IsStaging())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
+
+app.UseCors("AllowAll");
+app.UseRateLimiter();
+app.UseAuthentication();
+app.UseMultiTenancy<TenantInfoAdapter>();
+app.UseAuthorization();
+
+app.MapControllers();
+
+app.Run();
