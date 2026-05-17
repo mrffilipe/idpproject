@@ -27,10 +27,6 @@ public sealed class ApplicationConfiguration : BaseEntityConfiguration<AppEntity
             .HasColumnName("type")
             .IsRequired();
 
-        builder.Property(x => x.IsFirstParty)
-            .HasColumnName("is_first_party")
-            .IsRequired();
-
         builder.HasIndex(x => x.Slug)
             .IsUnique();
     }

@@ -3,6 +3,7 @@ using System;
 using IdPPlatform.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace IdPPlatform.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260517124203_RemoveApplicationIsFirstParty")]
+    partial class RemoveApplicationIsFirstParty
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -740,7 +743,7 @@ namespace IdPPlatform.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.OwnsOne("IdPPlatform.Domain.Entities.ExternalIdentity.Email#IdPPlatform.Domain.ValueObjects.EmailAddress", "Email", b1 =>
+                    b.OwnsOne("IdPPlatform.Domain.ValueObjects.EmailAddress", "Email", b1 =>
                         {
                             b1.Property<Guid>("ExternalIdentityId")
                                 .HasColumnType("uuid");
@@ -753,7 +756,7 @@ namespace IdPPlatform.Infrastructure.Migrations
 
                             b1.HasKey("ExternalIdentityId");
 
-                            b1.ToTable("external_identities", (string)null);
+                            b1.ToTable("external_identities");
 
                             b1.WithOwner()
                                 .HasForeignKey("ExternalIdentityId");
@@ -778,7 +781,7 @@ namespace IdPPlatform.Infrastructure.Migrations
 
             modelBuilder.Entity("IdPPlatform.Domain.Entities.Tenant", b =>
                 {
-                    b.OwnsOne("IdPPlatform.Domain.Entities.Tenant.Key#IdPPlatform.Domain.ValueObjects.TenantKey", "Key", b1 =>
+                    b.OwnsOne("IdPPlatform.Domain.ValueObjects.TenantKey", "Key", b1 =>
                         {
                             b1.Property<Guid>("TenantId")
                                 .HasColumnType("uuid");
@@ -791,7 +794,7 @@ namespace IdPPlatform.Infrastructure.Migrations
 
                             b1.HasKey("TenantId");
 
-                            b1.ToTable("tenants", (string)null);
+                            b1.ToTable("tenants");
 
                             b1.WithOwner()
                                 .HasForeignKey("TenantId");
@@ -803,7 +806,7 @@ namespace IdPPlatform.Infrastructure.Migrations
 
             modelBuilder.Entity("IdPPlatform.Domain.Entities.TenantInvite", b =>
                 {
-                    b.OwnsOne("IdPPlatform.Domain.Entities.TenantInvite.Email#IdPPlatform.Domain.ValueObjects.EmailAddress", "Email", b1 =>
+                    b.OwnsOne("IdPPlatform.Domain.ValueObjects.EmailAddress", "Email", b1 =>
                         {
                             b1.Property<Guid>("TenantInviteId")
                                 .HasColumnType("uuid");
@@ -816,7 +819,7 @@ namespace IdPPlatform.Infrastructure.Migrations
 
                             b1.HasKey("TenantInviteId");
 
-                            b1.ToTable("tenant_invites", (string)null);
+                            b1.ToTable("tenant_invites");
 
                             b1.WithOwner()
                                 .HasForeignKey("TenantInviteId");
@@ -889,7 +892,7 @@ namespace IdPPlatform.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.OwnsOne("IdPPlatform.Domain.Entities.TenantRole.Key#IdPPlatform.Domain.ValueObjects.TenantRoleKey", "Key", b1 =>
+                    b.OwnsOne("IdPPlatform.Domain.ValueObjects.TenantRoleKey", "Key", b1 =>
                         {
                             b1.Property<Guid>("TenantRoleId")
                                 .HasColumnType("uuid");
@@ -902,7 +905,7 @@ namespace IdPPlatform.Infrastructure.Migrations
 
                             b1.HasKey("TenantRoleId");
 
-                            b1.ToTable("tenant_roles", (string)null);
+                            b1.ToTable("tenant_roles");
 
                             b1.WithOwner()
                                 .HasForeignKey("TenantRoleId");
@@ -914,7 +917,7 @@ namespace IdPPlatform.Infrastructure.Migrations
 
             modelBuilder.Entity("IdPPlatform.Domain.Entities.User", b =>
                 {
-                    b.OwnsOne("IdPPlatform.Domain.Entities.User.Email#IdPPlatform.Domain.ValueObjects.EmailAddress", "Email", b1 =>
+                    b.OwnsOne("IdPPlatform.Domain.ValueObjects.EmailAddress", "Email", b1 =>
                         {
                             b1.Property<Guid>("UserId")
                                 .HasColumnType("uuid");
@@ -927,7 +930,7 @@ namespace IdPPlatform.Infrastructure.Migrations
 
                             b1.HasKey("UserId");
 
-                            b1.ToTable("users", (string)null);
+                            b1.ToTable("users");
 
                             b1.WithOwner()
                                 .HasForeignKey("UserId");

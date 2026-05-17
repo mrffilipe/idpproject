@@ -12,6 +12,7 @@ export interface User {
   id: string
   email: string
   displayName: string
+  photoUrl?: string | null
   memberships: UserMembership[]
 }
 

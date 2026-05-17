@@ -37,6 +37,7 @@ public sealed class GetUserById : IGetUserById
             Id = user.Id,
             Email = user.Email,
             DisplayName = user.DisplayName,
+            PhotoUrl = user.PhotoUrl,
             Memberships = user.Memberships
                 .Where(x => x.IsActive)
                 .Select(x => new UserMembershipDto

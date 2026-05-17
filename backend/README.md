@@ -2,6 +2,8 @@
 
 Backend do microsservico de autenticacao centralizada para o ecossistema de aplicacoes.
 
+Documentacao complementar: [DOMAIN.md](../docs/backend/DOMAIN.md), [APPLICATION.md](../docs/backend/APPLICATION.md), [ENTITY_AND_FLOW_GUIDE.md](../docs/ENTITY_AND_FLOW_GUIDE.md), [PRODUCT_DOCUMENTATION.md](../docs/PRODUCT_DOCUMENTATION.md). Indice: [docs/README.md](../docs/README.md).
+
 ## Stack
 
 - .NET 8 Web API

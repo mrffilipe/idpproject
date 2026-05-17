@@ -51,6 +51,13 @@ public static class DomainErrorMessages
         public const string InvalidFormat = "Email format is invalid.";
     }
 
+    public static class PhotoUrl
+    {
+        public const string Required = "Photo URL is required.";
+        public const string MaxLength = "Photo URL max length is 500.";
+        public const string InvalidFormat = "Photo URL must be a valid absolute http or https URL.";
+    }
+
     public static class ExternalIdentity
     {
         public const string UserIdRequired = "UserId is required.";

@@ -24,7 +24,7 @@ export function ProfilePage() {
       const data = await getMe()
       setUser(data)
       setDisplayName(data.displayName)
-      setPhotoUrl('')
+      setPhotoUrl(data.photoUrl ?? '')
       const membershipData = await listMyMemberships({ page: 1, pageSize: 100 })
       setMemberships(membershipData.items)
     } catch (loadError) {
@@ -60,7 +60,9 @@ export function ProfilePage() {
 
       <SectionCard title="Identidade">
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3} sx={{ alignItems: { sm: 'center' }, mb: 2 }}>
-          <Avatar sx={{ width: 72, height: 72, bgcolor: 'primary.main', fontSize: '1.5rem' }}>{initials}</Avatar>
+          <Avatar src={photoUrl || undefined} sx={{ width: 72, height: 72, bgcolor: 'primary.main', fontSize: '1.5rem' }}>
+            {initials}
+          </Avatar>
           <Box>
             <Typography variant="h6">{user?.displayName ?? '—'}</Typography>
             <Typography variant="body2" color="text.secondary">

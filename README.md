@@ -21,7 +21,7 @@ Este repositório contém o **backend** (API .NET) e o **frontend** (painel web 
 
 O **frontend** é um painel administrativo (SPA) que consome a API versionada em URL (`/v1.0/...`, conforme configuração). O **backend** implementa a API, persistência em **PostgreSQL** (EF Core + Npgsql), integração **Firebase Admin**, e-mail via **AWS SES** (configurável), e **TenancyKit** para resolver o tenant a partir de claims.
 
-Para detalhes de API, exemplos de *exchange* e convenções de código do backend, consulte [backend/README.md](backend/README.md). Para estrutura de pastas e serviços HTTP do SPA, consulte [frontend/README.md](frontend/README.md).
+Para documentação detalhada, consulte o índice em **[docs/README.md](docs/README.md)** (produto, backend e frontend).
 
 ---
 
@@ -200,7 +200,14 @@ npm run preview  # pré-visualizar o build localmente
 
 ## Documentação complementar
 
-- [backend/README.md](backend/README.md) — camadas do projeto, endpoints resumidos, corpo mínimo do `POST /v1/auth/exchange`, rate limits e notas de segurança.  
-- [frontend/README.md](frontend/README.md) — estrutura de pastas, serviços HTTP e relação com o backend.
+| Documento | Descrição |
+|-----------|-----------|
+| [docs/README.md](docs/README.md) | Índice central |
+| [docs/PRODUCT_DOCUMENTATION.md](docs/PRODUCT_DOCUMENTATION.md) | Visão de produto |
+| [docs/ENTITY_AND_FLOW_GUIDE.md](docs/ENTITY_AND_FLOW_GUIDE.md) | Entidades e fluxos |
+| [backend/README.md](backend/README.md) | API, execução e segurança |
+| [docs/backend/DOMAIN.md](docs/backend/DOMAIN.md) | Camada de domínio |
+| [docs/backend/APPLICATION.md](docs/backend/APPLICATION.md) | Services e use cases |
+| [frontend/README.md](frontend/README.md) | Painel web |
 
 O contrato OpenAPI usado pelo frontend pode ser consultado em [frontend/swagger.json](frontend/swagger.json) (quando atualizado em conjunto com a API).

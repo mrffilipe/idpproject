@@ -8,7 +8,11 @@ Este documento explica:
 - qual problema de negocio cada fluxo resolve
 - como entidades e fluxos se integram no ciclo de autenticacao/autorizacao
 
-Ele complementa `PRODUCT_DOCUMENTATION.md` com foco didatico e sem ambiguidades.
+Ele complementa [PRODUCT_DOCUMENTATION.md](PRODUCT_DOCUMENTATION.md) com foco didatico e sem ambiguidades.
+
+Para referencia exaustiva de entidades, value objects, metodos de dominio e invariantes, consulte [backend/DOMAIN.md](backend/DOMAIN.md).
+
+Para services, commands e queries (camada Application), consulte [backend/APPLICATION.md](backend/APPLICATION.md).
 
 ---
 
@@ -30,7 +34,7 @@ Significa:
 - identidade interna canonica do usuario no IdP
 
 Responsabilidades:
-- armazenar email, nome de exibicao e status ativo
+- armazenar email, nome de exibicao, foto de perfil (`PhotoUrl`) e status ativo
 
 Integra com:
 - `ExternalIdentity` (origem externa de login)
@@ -63,13 +67,13 @@ Responsabilidades:
 Integra com:
 - `TenantMembership` (usuarios participantes)
 - `TenantRole` (catalogo de roles customizaveis)
-- `ApplicationClient` (clients emitidos para esse tenant)
+- `ApplicationTenant` (vinculo app-tenant com metadados opcionais)
 - `AuditLog` e `TenantInvite` (dados tenant-scoped)
 
 Relacionamento com aplicacoes:
 - `Tenant` nao referencia `Application` diretamente.
-- O vinculo tenant-app acontece em `ApplicationClient` (`TenantId` + `ApplicationId`).
-- Uma `Application` global pode ter varios `ApplicationClient`, um por tenant (credenciais e redirect/scopes isolados).
+- O vinculo tenant-app acontece em `ApplicationTenant` (`ApplicationId` + `TenantId`, com `ExternalCustomerId` e `PlanCode` opcionais).
+- `ApplicationClient` pertence a uma `Application` e identifica credenciais OAuth da app (sem `TenantId` na entidade).
 
 ---
 
@@ -119,11 +123,25 @@ Responsabilidades:
 Integra com:
 - fluxo de `exchange` (validacao de client)
 - `AuthSession` (sessao registra qual client iniciou autenticacao)
-- `Tenant` e `Application` (entidade ponte entre organizacao e produto OAuth)
+- `Application` (N clients por aplicacao)
 
 ---
 
-## 3.7 `AuthSession`
+## 3.7 `ApplicationTenant`
+Significa:
+- vinculo entre uma aplicacao registrada e um tenant provisionado
+
+Responsabilidades:
+- associar `ApplicationId` e `TenantId`
+- armazenar metadados opcionais (`ExternalCustomerId`, `PlanCode`) para billing/onboarding da app consumidora
+
+Integra com:
+- `ProvisionApplicationTenant` (admin de plataforma)
+- `SubscribeTenant` (usuario autenticado via OAuth da app)
+
+---
+
+## 3.8 `AuthSession`
 Significa:
 - sessao autenticada de um usuario no IdP
 
@@ -139,7 +157,7 @@ Integra com:
 
 ---
 
-## 3.8 `RefreshToken`
+## 3.9 `RefreshToken`
 Significa:
 - credencial de renovacao de acesso para uma sessao
 
@@ -154,7 +172,7 @@ Integra com:
 
 ---
 
-## 3.9 `AuditLog`
+## 3.10 `AuditLog`
 Significa:
 - trilha forense de eventos sensiveis de seguranca e administracao
 
@@ -168,7 +186,7 @@ Integra com:
 
 ---
 
-## 3.10 `TenantInvite`
+## 3.11 `TenantInvite`
 Significa:
 - convite controlado para entrada de novo membro em tenant
 
@@ -182,7 +200,7 @@ Integra com:
 
 ---
 
-## 3.11 `TenantRole`
+## 3.12 `TenantRole`
 Significa:
 - role configuravel dentro de um tenant
 

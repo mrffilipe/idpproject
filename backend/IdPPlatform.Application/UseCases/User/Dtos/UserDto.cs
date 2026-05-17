@@ -8,5 +8,7 @@ public sealed record UserDto
 
     public required string DisplayName { get; init; }
 
+    public string? PhotoUrl { get; init; }
+
     public required IReadOnlyList<UserMembershipDto> Memberships { get; init; }
 }

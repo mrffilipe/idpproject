@@ -9,7 +9,6 @@ public class Application : BaseEntity
     public string Name { get; private set; } = string.Empty;
     public string Slug { get; private set; } = string.Empty;
     public ApplicationType Type { get; private set; }
-    public bool IsFirstParty { get; private set; }
 
     public ICollection<ApplicationClient> Clients { get; private set; } = new List<ApplicationClient>();
     public ICollection<ApplicationTenant> Tenants { get; private set; } = new List<ApplicationTenant>();
@@ -21,8 +20,7 @@ public class Application : BaseEntity
     public Application(
         string name,
         string slug,
-        ApplicationType type,
-        bool isFirstParty = true)
+        ApplicationType type)
     {
         if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(slug))
         {
@@ -32,6 +30,5 @@ public class Application : BaseEntity
         Name = name.Trim();
         Slug = slug.Trim().ToLowerInvariant();
         Type = type;
-        IsFirstParty = isFirstParty;
     }
 }

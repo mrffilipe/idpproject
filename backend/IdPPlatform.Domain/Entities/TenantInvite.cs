@@ -1,5 +1,6 @@
 using IdPPlatform.Domain.Common;
 using IdPPlatform.Domain.Exceptions;
+using IdPPlatform.Domain.Rules;
 using IdPPlatform.Domain.ValueObjects;
 
 namespace IdPPlatform.Domain.Entities;
@@ -59,40 +60,11 @@ public sealed class TenantInvite : TenantEntity
 
     public void ReplaceRoles(IEnumerable<TenantRole> roles)
     {
-        var normalizedRoles = NormalizeRoles(roles);
+        var normalizedRoles = TenantRoleAssignmentRules.ValidateForTenant(TenantId, roles);
         Roles.Clear();
         foreach (var role in normalizedRoles)
         {
             Roles.Add(new TenantInviteRole(TenantId, Id, role));
         }
-    }
-
-    private IReadOnlyList<TenantRole> NormalizeRoles(IEnumerable<TenantRole> roles)
-    {
-        var normalizedRoles = roles?.ToList() ?? [];
-        if (normalizedRoles.Count == 0)
-        {
-            throw new DomainValidationException(DomainErrorMessages.TenantRole.AtLeastOneRoleRequired);
-        }
-
-        if (normalizedRoles.Any(x => x.TenantId != TenantId))
-        {
-            throw new DomainValidationException(DomainErrorMessages.TenantRole.RoleTenantMismatch);
-        }
-
-        if (normalizedRoles.Any(x => !x.IsActive))
-        {
-            throw new DomainValidationException(DomainErrorMessages.TenantRole.InactiveRole);
-        }
-
-        var duplicates = normalizedRoles
-            .GroupBy(x => x.Id)
-            .Any(x => x.Count() > 1);
-        if (duplicates)
-        {
-            throw new DomainValidationException(DomainErrorMessages.TenantRole.DuplicateRole);
-        }
-
-        return normalizedRoles;
     }
 }

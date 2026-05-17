@@ -2,6 +2,8 @@
 
 SPA em **React 19**, **TypeScript** e **Vite**, com **Material UI**, **React Router 7 (Data Mode)** e **Axios** para integração com a API do IdP Platform.
 
+Documentação de produto: [docs/README.md](../docs/README.md), [ENTITY_AND_FLOW_GUIDE.md](../docs/ENTITY_AND_FLOW_GUIDE.md). Backend: [backend/README.md](../backend/README.md).
+
 ## Requisitos
 
 - Node.js compatível com a versão no `package.json`

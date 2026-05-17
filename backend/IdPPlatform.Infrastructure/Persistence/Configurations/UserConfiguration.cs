@@ -1,4 +1,5 @@
 using IdPPlatform.Domain.Entities;
+using IdPPlatform.Domain.ValueObjects;
 using IdPPlatform.Infrastructure.Common;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -28,9 +29,11 @@ public sealed class UserConfiguration : BaseEntityConfiguration<User>
             .HasMaxLength(120)
             .IsRequired();
 
-        builder.Property(x => x.PhotoUrl)
-            .HasColumnName("photo_url")
-            .HasMaxLength(500);
+        builder.OwnsOne(
+            x => x.PhotoUrl,
+            b => b.Property(y => y.Value)
+                .HasColumnName("photo_url")
+                .HasMaxLength(PhotoUrl.MaxLength));
 
         builder.Property(x => x.IsActive)
             .HasColumnName("is_active")

@@ -11,7 +11,19 @@ public sealed class ApplicationTenant : BaseEntity
     public Guid TenantId { get; private set; }
     public Tenant Tenant { get; private set; } = null!;
 
+    /// <summary>
+    /// Identificador do tenant ou cliente no sistema externo da aplicação consumidora
+    /// (ex.: ID no CRM, Stripe customer id, conta no produto SaaS).
+    /// Opcional; correlaciona o tenant do IdP com registros de billing ou onboarding da app.
+    /// Preenchido em provisionamento (admin de plataforma) e subscribe (usuário autenticado via OAuth da app).
+    /// </summary>
     public string? ExternalCustomerId { get; private set; }
+
+    /// <summary>
+    /// Código do plano ou contrato comercial associado ao vínculo aplicação-tenant
+    /// (ex.: starter, enterprise). Opcional; metadado para provisionamento, limites de features
+    /// ou integração com billing. Não altera autorização no IdP.
+    /// </summary>
     public string? PlanCode { get; private set; }
     public bool IsActive { get; private set; }
 
