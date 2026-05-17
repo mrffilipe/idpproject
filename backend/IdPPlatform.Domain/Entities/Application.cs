@@ -12,6 +12,7 @@ public class Application : BaseEntity
     public bool IsFirstParty { get; private set; }
 
     public ICollection<ApplicationClient> Clients { get; private set; } = new List<ApplicationClient>();
+    public ICollection<ApplicationTenant> Tenants { get; private set; } = new List<ApplicationTenant>();
 
     private Application()
     {

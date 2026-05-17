@@ -8,4 +8,6 @@ public sealed class RateLimitOptions
     public int ExchangeWindowMinutes { get; init; } = 5;
     public int RefreshPermitLimit { get; init; } = 20;
     public int RefreshWindowMinutes { get; init; } = 5;
+    public int BootstrapPermitLimit { get; init; } = 3;
+    public int BootstrapWindowMinutes { get; init; } = 15;
 }

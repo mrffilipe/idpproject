@@ -15,9 +15,12 @@ public static class RepositoryExtensions
         services.AddScoped<IExternalIdentityRepository, ExternalIdentityRepository>();
         services.AddScoped<IApplicationRepository, ApplicationRepository>();
         services.AddScoped<IApplicationClientRepository, ApplicationClientRepository>();
+        services.AddScoped<IApplicationTenantRepository, ApplicationTenantRepository>();
         services.AddScoped<IAuthSessionRepository, AuthSessionRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<ITenantInviteRepository, TenantInviteRepository>();
+        services.AddScoped<IPlatformConfigurationRepository, PlatformConfigurationRepository>();
+        services.AddScoped<IAuditLogRepository, AuditLogRepository>();
 
         return services;
     }

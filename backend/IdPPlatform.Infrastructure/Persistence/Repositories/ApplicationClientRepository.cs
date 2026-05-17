@@ -25,4 +25,10 @@ public sealed class ApplicationClientRepository : IApplicationClientRepository
         return _context.ApplicationClients
             .FirstOrDefaultAsync(x => x.ClientId == clientId, cancellationToken);
     }
+
+    public Task<ApplicationClient?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        return _context.ApplicationClients
+            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+    }
 }

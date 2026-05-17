@@ -3,7 +3,9 @@ using System.Text.Json;
 using IdPPlatform.API.Common;
 using IdPPlatform.Application.Exceptions;
 using IdPPlatform.Domain.Exceptions;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Hosting;
 
 namespace IdPPlatform.API.Middlewares;
 
@@ -70,13 +72,17 @@ public sealed class ApplicationExceptionMiddleware
                 ApiErrorMessages.NotFoundTitle,
                 ex.Message);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            var detail = context.RequestServices.GetService<IHostEnvironment>()?.IsDevelopment() == true
+                ? ex.Message
+                : ApiErrorMessages.UnexpectedErrorDetail;
+
             await WriteProblemAsync(
                 context,
                 HttpStatusCode.InternalServerError,
                 ApiErrorMessages.UnhandledServerErrorTitle,
-                ApiErrorMessages.UnexpectedErrorDetail);
+                detail);
         }
     }
 

@@ -81,8 +81,12 @@ public sealed class ApplicationClientValidator : IApplicationClientValidator
             return;
         }
 
-        var allowed = DeserializeStringArray(client.RedirectUris);
-        if (!allowed.Contains(redirectUri.Trim(), StringComparer.OrdinalIgnoreCase))
+        var normalized = NormalizeRedirectUri(redirectUri);
+        var allowed = DeserializeStringArray(client.RedirectUris)
+            .Select(NormalizeRedirectUri)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        if (!allowed.Contains(normalized))
         {
             throw new InvalidClientException(ApplicationErrorMessages.OAuthClient.RedirectUriNotAllowed);
         }
@@ -109,6 +113,12 @@ public sealed class ApplicationClientValidator : IApplicationClientValidator
                 ApplicationErrorMessages.OAuthClient.RequestedScopesNotAllowed,
                 string.Join(", ", denied)));
         }
+    }
+
+    private static string NormalizeRedirectUri(string value)
+    {
+        var trimmed = value.Trim();
+        return trimmed.EndsWith('/') ? trimmed.TrimEnd('/') : trimmed;
     }
 
     private static HashSet<string> DeserializeStringArray(string rawJson)

@@ -7,6 +7,7 @@ using IdPPlatform.Application.Services.TokenIssuer;
 using IdPPlatform.Application.Services.UnitOfWork;
 using IdPPlatform.Application.Services.UserScope;
 using IdPPlatform.Application.Interfaces;
+using IdPPlatform.Application.Services.TenantResolutionCache;
 using IdPPlatform.Application.Services.TenantRoles;
 using IdPPlatform.Infrastructure.Services.Auth;
 using IdPPlatform.Infrastructure.Services.ApplicationClients;
@@ -17,6 +18,7 @@ using IdPPlatform.Infrastructure.Services.TokenIssuer;
 using IdPPlatform.Infrastructure.Services.UnitOfWork;
 using IdPPlatform.Infrastructure.Services.UserScope;
 using IdPPlatform.Infrastructure.Services.Invite;
+using IdPPlatform.Infrastructure.Services.TenantResolutionCache;
 using IdPPlatform.Infrastructure.Services.TenantRoles;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -34,6 +36,7 @@ public static class ServiceExtensions
         services.AddScoped<ITokenIssuer, TokenIssuer>();
         services.AddScoped<IInvitePolicy, InvitePolicy>();
         services.AddScoped<ITenantRoleResolver, TenantRoleResolver>();
+        services.AddScoped<ITenantResolutionCache, DistributedTenantResolutionCache>();
         services.AddScoped<IEmailService, AwsSesEmailService>();
         services.AddScoped<IExternalIdentityProvider, FirebaseIdentityProvider>();
         services.AddScoped<IAuth, IdPAuth>();

@@ -6,7 +6,8 @@ Backend do microsservico de autenticacao centralizada para o ecossistema de apli
 
 - .NET 8 Web API
 - Clean Architecture (Domain/Application/Infrastructure/API)
-- EF Core + MySQL
+- EF Core + PostgreSQL
+- Redis (cache de resolucao de tenant)
 - TenancyKit (claims tenant resolver + EF store)
 - Firebase Authentication (token verification + exchange)
 - Swagger/OpenAPI
@@ -35,6 +36,8 @@ Com a API em execucao:
 
 ## Endpoints principais
 
+- `GET /v1/platform/status`
+- `POST /v1/platform/bootstrap`
 - `POST /v1/auth/exchange`
 - `POST /v1/auth/refresh`
 - `POST /v1/auth/switch-tenant`
@@ -60,6 +63,27 @@ Com a API em execucao:
 
 `POST /v1/auth/exchange` agora requer contexto de client OAuth.
 
+Se a plataforma ainda nao foi bootstrapada, o endpoint retorna `409` e exige completar `POST /v1/platform/bootstrap` primeiro.
+
+Body de bootstrap (wizard inicial):
+
+```json
+{
+  "identityToken": "<firebase_id_token>",
+  "tenantName": "Platform",
+  "tenantKey": "platform",
+  "applicationName": "Platform Admin",
+  "applicationSlug": "platform-admin",
+  "applicationType": 0,
+  "clientId": "platform-admin-web",
+  "clientType": 0,
+  "clientSecret": null,
+  "redirectUris": ["http://localhost:3000"],
+  "allowedScopes": ["openid", "profile", "email"],
+  "accessTokenTtlSeconds": 900
+}
+```
+
 Body minimo:
 
 ```json
@@ -81,6 +105,15 @@ Notas:
 - `codeChallenge` e obrigatorio para clients `Public` (PKCE).
 - Endpoints de auth possuem rate limiting por IP.
 
+## Regras de autorizacao administrativa
+
+- `POST /v1/tenants`: exige policy `PlatformAdministrator` (`prole=plat_admin`).
+- `POST /v1/applications`: exige policy `PlatformAdministrator` (`prole=plat_admin`).
+- `POST /v1/applications/{id}/clients`: exige `plat_admin` **ou** membership ativa no tenant informado com role administrativa (`owner`/`admin`).
+- `GET /v1/tenants/{id}`, `PATCH /v1/tenants/{id}` e `POST /v1/tenants/{id}/invites`: exigem `plat_admin` **ou** membership ativa administrativa (`owner`/`admin`) no tenant alvo.
+- Ao criar tenant via API, o ator vira `owner` por padrao; opcionalmente, `initialAdministratorUserId` pode apontar outro usuario ativo ja existente.
+- O `plat_admin` root e definido apenas uma vez no bootstrap inicial (`POST /v1/platform/bootstrap`) e nao pode ser reatribuido por configuracao.
+
 ## Configuracoes novas
 
 Adicione/ajuste no `appsettings.Development.json`:
@@ -94,24 +127,43 @@ Adicione/ajuste no `appsettings.Development.json`:
     "ExchangePermitLimit": 5,
     "ExchangeWindowMinutes": 5,
     "RefreshPermitLimit": 20,
-    "RefreshWindowMinutes": 5
+    "RefreshWindowMinutes": 5,
+    "BootstrapPermitLimit": 3,
+    "BootstrapWindowMinutes": 15
   },
   "Invite": {
     "ExpirationHours": 72
   },
   "Email": {
     "FromAddress": "noreply@idpplatform.local",
-    "Region": "us-east-1"
+    "Region": "us-east-1",
+    "AccessKeyId": "",
+    "SecretAccessKey": "",
+    "SessionToken": ""
+  },
+  "Firebase": {
+    "ProjectId": "idpplatform-dev",
+    "CredentialPath": ""
+  },
+  "Redis": {
+    "ConnectionString": "localhost:6379,password=default_password,abortConnect=false",
+    "InstanceName": "idpplatform:",
+    "TenantIdentifierCacheMinutes": 5
   }
 }
 ```
+
+Notas:
+
+- O codigo usa `IOptions` para SES/Firebase/Redis. Se desejar mapear variaveis de ambiente, use as chaves hierarquicas do ASP.NET Core (ex.: `Email__AccessKeyId`, `Firebase__ProjectId`, `Redis__ConnectionString`).
+- `TenantStore` usa Redis para cachear a resolucao por `TenantKey` (evita query repetitiva em todo request multitenant).
+- O bootstrap inicial nao usa seed de negocio em migracao. Tenant/application/client/root admin sao criados via `POST /v1/platform/bootstrap`.
 
 ## Migracao de banco
 
 Migrations geradas:
 
-- `SecurityAuditSessionsAndInvites`
-- `FlexibleTenantRoles`
+- `FirstMigration`
 
 Para aplicar:
 

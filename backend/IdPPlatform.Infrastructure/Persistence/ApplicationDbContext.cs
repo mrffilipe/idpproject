@@ -20,11 +20,13 @@ public class ApplicationDbContext : DbContext
     public DbSet<TenantMembershipRole> TenantMembershipRoles { get; private set; } = null!;
     public DbSet<Domain.Entities.Application> Applications { get; private set; } = null!;
     public DbSet<ApplicationClient> ApplicationClients { get; private set; } = null!;
+    public DbSet<ApplicationTenant> ApplicationTenants { get; private set; } = null!;
     public DbSet<AuthSession> AuthSessions { get; private set; } = null!;
     public DbSet<RefreshToken> RefreshTokens { get; private set; } = null!;
     public DbSet<AuditLog> AuditLogs { get; private set; } = null!;
     public DbSet<TenantInvite> TenantInvites { get; private set; } = null!;
     public DbSet<TenantInviteRole> TenantInviteRoles { get; private set; } = null!;
+    public DbSet<PlatformConfiguration> PlatformConfigurations { get; private set; } = null!;
 
     public ApplicationDbContext(
         DbContextOptions<ApplicationDbContext> options,

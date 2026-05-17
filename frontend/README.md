@@ -15,6 +15,11 @@ Copie `.env.example` para `.env` e preencha:
 - `VITE_API_BASE_URL`: URL base do backend (ex.: `http://localhost:5000`)
 - `VITE_API_VERSION`: versão da API no path (ex.: `1.0` para gerar `/v1.0/...`)
 - `VITE_API_TIMEOUT_MS`: timeout das requisições Axios em ms
+- `VITE_OAUTH_CLIENT_ID`: fallback de client usado no exchange (o login usa `GET /platform/status` quando disponível)
+- `VITE_FIREBASE_API_KEY`: API key do projeto Firebase
+- `VITE_FIREBASE_AUTH_DOMAIN`: domínio auth Firebase
+- `VITE_FIREBASE_PROJECT_ID`: project id Firebase
+- `VITE_FIREBASE_APP_ID`: app id web Firebase
 
 Todas as variáveis de configuração de API usadas pelo frontend têm origem no `.env`.
 
@@ -33,8 +38,9 @@ npm run preview  # preview local do build
   - `baseURL` e timeout vindos de env
   - interceptor para Bearer token
   - refresh token automático em `401` com retry da request
+- A autenticação usa Firebase (`src/config/firebase.ts`) para obter ID token e, em seguida, exchange no backend com PKCE.
 - Os endpoints estão organizados por domínio em `src/services/`:
-  - `authService`, `usersService`, `tenantsService`, `membershipsService`
+  - `authService`, `platformService`, `usersService`, `tenantsService`, `membershipsService`
   - `tenantRolesService`, `applicationsService`, `auditLogsService`, `wellKnownService`
 - A versão da API é centralizada em `src/services/httpPaths.ts` e derivada de `VITE_API_VERSION`.
 
@@ -42,7 +48,7 @@ npm run preview  # preview local do build
 
 | Pasta | Conteúdo |
 |-------|----------|
-| `src/pages/` | Páginas e fluxos (login, tenants, memberships, roles, apps, auditoria, jwks) |
+| `src/pages/` | Páginas e fluxos (bootstrap, login, tenants, memberships, roles, apps, auditoria, jwks) |
 | `src/components/` | Layout base (`AppLayout`) e componentes compartilhados |
 | `src/contexts/` | `AuthContext`, `TenantContext` |
 | `src/services/` | Chamadas HTTP por domínio |
@@ -57,6 +63,9 @@ npm run preview  # preview local do build
 
 O frontend cobre os recursos da API em telas/fluxos para:
 
+- bootstrap inicial irreversível (`/bootstrap`) em wizard de 2 etapas:
+  - etapa 1: autenticação Firebase/Google
+  - etapa 2: configuração editável de tenant/application/client
 - autenticação e sessões
 - perfil do usuário
 - tenants (criar, listar, buscar, atualizar, convite, switch tenant)

@@ -66,6 +66,11 @@ Integra com:
 - `ApplicationClient` (clients emitidos para esse tenant)
 - `AuditLog` e `TenantInvite` (dados tenant-scoped)
 
+Relacionamento com aplicacoes:
+- `Tenant` nao referencia `Application` diretamente.
+- O vinculo tenant-app acontece em `ApplicationClient` (`TenantId` + `ApplicationId`).
+- Uma `Application` global pode ter varios `ApplicationClient`, um por tenant (credenciais e redirect/scopes isolados).
+
 ---
 
 ## 3.4 `TenantMembership`
@@ -81,6 +86,10 @@ Integra com:
 - `TenantRole` (roles padrao ou customizadas do tenant)
 - claims de tenant (`tid`, `mid`, multiplas `trole`) no JWT
 - validacao de acesso no `switch-tenant` e fluxos administrativos
+
+Observacao:
+- administracao global (criacao de tenant e application) nao usa `trole`; usa claim de plataforma `prole=plat_admin`
+- criacao de convites, atualizacao e consulta de tenant por id exigem `plat_admin` ou role administrativa (`owner`/`admin`) no tenant alvo
 
 ---
 
@@ -110,6 +119,7 @@ Responsabilidades:
 Integra com:
 - fluxo de `exchange` (validacao de client)
 - `AuthSession` (sessao registra qual client iniciou autenticacao)
+- `Tenant` e `Application` (entidade ponte entre organizacao e produto OAuth)
 
 ---
 
@@ -124,7 +134,7 @@ Responsabilidades:
 
 Integra com:
 - `RefreshToken` (rotacao e continuidade da sessao)
-- claims `sid`, `tid`, `mid` e multiplas `trole`
+- claims `sid`, `tid`, `mid`, multiplas `trole` e, quando aplicavel, `prole`
 - endpoints de listagem/revogacao de sessao
 
 ---
@@ -203,6 +213,10 @@ Passos logicos:
 6. criar `AuthSession`
 7. criar `RefreshToken`
 8. emitir JWT com claims de contexto
+
+Regras de autorizacao relacionadas:
+- criacao de tenant e application global exige `prole=plat_admin`
+- criacao de application client exige `prole=plat_admin` ou role administrativa (`owner`/`admin`) no tenant do client
 
 Entidades centrais:
 - `ApplicationClient`, `User`, `ExternalIdentity`, `TenantMembership`, `AuthSession`, `RefreshToken`
@@ -313,6 +327,12 @@ Entidades centrais:
 
 ```mermaid
 flowchart TD
+    platformStatus[Platform Status] --> bootstrap[Platform Bootstrap]
+    bootstrap --> user[User]
+    bootstrap --> membership[TenantMembership]
+    bootstrap --> tenant[Tenant]
+    bootstrap --> app[Application]
+    bootstrap --> appClient[ApplicationClient]
     appClient[ApplicationClient] --> exchange[Auth Exchange]
     exchange --> user[User]
     exchange --> extIdentity[ExternalIdentity]
@@ -347,6 +367,10 @@ flowchart TD
 
 **Onde mora permissao de tenant?**
 - em `TenantMembership`, ligada a uma ou mais `TenantRole`.
+
+**Onde mora permissao de plataforma?**
+- no usuario (`IsPlatformAdmin`) com emissao da claim `prole=plat_admin` no JWT.
+- essa flag agora e definida exclusivamente no bootstrap inicial (`POST /v1/platform/bootstrap`) e fica bloqueada apos configuracao.
 
 **O que mantem login vivo?**
 - combinacao `AuthSession` + `RefreshToken`.

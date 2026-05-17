@@ -1,6 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using IdPPlatform.Application.Services.TokenIssuer;
+using IdPPlatform.Domain.Constants;
 using IdPPlatform.Infrastructure.Configurations;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -53,6 +54,11 @@ public sealed class TokenIssuer : ITokenIssuer
         {
             yield return new Claim("trole", role);
             yield return new Claim(ClaimTypes.Role, role);
+        }
+
+        foreach (var role in claims.PlatformRoles.Select(x => x.Trim().ToLowerInvariant()).Where(x => x.Length > 0).Distinct())
+        {
+            yield return new Claim(PlatformRoleDefaults.ClaimType, role);
         }
 
         foreach (var method in claims.Amr)

@@ -1,35 +1,110 @@
-import { Button, Stack, Typography } from '@mui/material'
+import AppsOutlinedIcon from '@mui/icons-material/AppsOutlined'
+import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined'
+import BusinessOutlinedIcon from '@mui/icons-material/BusinessOutlined'
+import ChevronRightIcon from '@mui/icons-material/ChevronRight'
+import GroupOutlinedIcon from '@mui/icons-material/GroupOutlined'
+import KeyOutlinedIcon from '@mui/icons-material/KeyOutlined'
+import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
+import SecurityOutlinedIcon from '@mui/icons-material/SecurityOutlined'
+import VpnKeyOutlinedIcon from '@mui/icons-material/VpnKeyOutlined'
+import { Box, Card, CardActionArea, CardContent, Grid, Stack, Typography } from '@mui/material'
 import { Link } from 'react-router'
-import { PageCard } from '../components/PageCard'
+import { PageHeader } from '../components/ui'
 
-const links = [
-  { to: '/profile', label: 'Meu Perfil' },
-  { to: '/sessions', label: 'Sessões Ativas' },
-  { to: '/tenants', label: 'Tenants' },
-  { to: '/memberships', label: 'Memberships' },
-  { to: '/tenant-roles', label: 'Tenant Roles' },
-  { to: '/applications', label: 'Applications' },
-  { to: '/audit-logs', label: 'Audit Logs' },
-  { to: '/jwks', label: 'JWKS' },
+const modules = [
+  {
+    to: '/profile',
+    label: 'Meu Perfil',
+    description: 'Atualize seus dados e visualize memberships',
+    icon: <PersonOutlinedIcon />,
+  },
+  {
+    to: '/sessions',
+    label: 'Sessões',
+    description: 'Gerencie sessões ativas da sua conta',
+    icon: <SecurityOutlinedIcon />,
+  },
+  {
+    to: '/tenants',
+    label: 'Tenants',
+    description: 'Crie, edite e selecione organizações',
+    icon: <BusinessOutlinedIcon />,
+  },
+  {
+    to: '/memberships',
+    label: 'Memberships',
+    description: 'Membros e papéis por tenant',
+    icon: <GroupOutlinedIcon />,
+  },
+  {
+    to: '/tenant-roles',
+    label: 'Papéis do Tenant',
+    description: 'Defina papéis customizados',
+    icon: <VpnKeyOutlinedIcon />,
+  },
+  {
+    to: '/applications',
+    label: 'Applications',
+    description: 'Aplicações OAuth registradas',
+    icon: <AppsOutlinedIcon />,
+  },
+  {
+    to: '/audit-logs',
+    label: 'Audit Logs',
+    description: 'Histórico de ações na plataforma',
+    icon: <ArticleOutlinedIcon />,
+  },
+  {
+    to: '/jwks',
+    label: 'JWKS',
+    description: 'Chaves públicas para validação de JWT',
+    icon: <KeyOutlinedIcon />,
+  },
 ]
 
 export function HomePage() {
   return (
-    <PageCard
-      title="Dashboard"
-      subtitle="Acesso rápido para todos os módulos integrados com os endpoints do backend."
-    >
-      <Typography color="text.secondary">
-        Esta tela centraliza os fluxos de CRUD e consultas implementados com React Router Data Mode, MUI
-        e Axios.
-      </Typography>
-      <Stack spacing={1.5}>
-        {links.map((link) => (
-          <Button key={link.to} component={Link} to={link.to} variant="contained">
-            {link.label}
-          </Button>
+    <Stack spacing={3}>
+      <PageHeader
+        title="Dashboard"
+        description="Acesso rápido aos módulos de administração da plataforma IdP."
+      />
+      <Grid container spacing={2}>
+        {modules.map((module) => (
+          <Grid key={module.to} size={{ xs: 12, sm: 6, lg: 4 }}>
+            <Card sx={{ height: '100%' }}>
+              <CardActionArea component={Link} to={module.to} sx={{ height: '100%' }}>
+                <CardContent>
+                  <Stack direction="row" spacing={2} sx={{ alignItems: 'flex-start' }}>
+                    <Box
+                      sx={{
+                        p: 1,
+                        borderRadius: 2,
+                        bgcolor: 'primary.main',
+                        color: 'primary.contrastText',
+                        display: 'flex',
+                      }}
+                    >
+                      {module.icon}
+                    </Box>
+                    <Stack spacing={0.5} sx={{ flex: 1 }}>
+                      <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                          {module.label}
+                        </Typography>
+                        <ChevronRightIcon color="action" fontSize="small" />
+                      </Stack>
+                      <Typography variant="body2" color="text.secondary">
+                        {module.description}
+                      </Typography>
+                    </Stack>
+                  </Stack>
+                </CardContent>
+              </CardActionArea>
+            </Card>
+          </Grid>
         ))}
-      </Stack>
-    </PageCard>
+      </Grid>
+    </Stack>
   )
 }

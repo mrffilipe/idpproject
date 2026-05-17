@@ -40,6 +40,7 @@ public static class DomainErrorMessages
     {
         public const string DisplayNameRequired = "Display name is required.";
         public const string UserNotFound = "User not found.";
+        public const string UserInactive = "User is inactive.";
         public const string EmailAlreadyExists = "User email already exists.";
     }
 
@@ -83,6 +84,12 @@ public static class DomainErrorMessages
         public const string DataInvalid = "Application client data is invalid.";
     }
 
+    public static class ApplicationTenant
+    {
+        public const string DataInvalid = "Application tenant data is invalid.";
+        public const string MappingAlreadyExists = "Application tenant mapping already exists.";
+    }
+
     public static class AuthSession
     {
         public const string UserIdRequired = "UserId is required.";
@@ -93,5 +100,13 @@ public static class DomainErrorMessages
     public static class RefreshToken
     {
         public const string DataInvalid = "Refresh token data is invalid.";
+    }
+
+    public static class PlatformConfiguration
+    {
+        public const string NotFound = "Platform configuration not found.";
+        public const string AlreadyBootstrapped = "Platform bootstrap has already been completed.";
+        public const string RootUserIdRequired = "Root user id is required.";
+        public const string OauthClientIdRequired = "OAuth client id is required.";
     }
 }

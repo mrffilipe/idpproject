@@ -13,8 +13,5 @@ public abstract class BaseEntity
         UpdatedAt = utcNow;
     }
 
-    public void SetUpdatedAt()
-    {
-        UpdatedAt = DateTime.UtcNow;
-    }
+    public void SetUpdatedAt() => UpdatedAt = DateTime.UtcNow;
 }

@@ -44,7 +44,7 @@ public sealed class GetUserById : IGetUserById
                     MembershipId = x.Id,
                     TenantId = x.TenantId,
                     TenantName = x.Tenant.Name,
-                    TenantKey = x.Tenant.Key,
+                    TenantKey = x.Tenant.Key.Value,
                     Roles = x.Roles.Select(role => role.Role.Key.Value).ToList()
                 })
                 .ToList()

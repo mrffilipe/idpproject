@@ -14,11 +14,12 @@ Este repositório contém o **backend** (API .NET) e o **frontend** (painel web 
 | **Sessão e tokens da plataforma** | Após validar o Firebase, a API emite **JWT de acesso** e **refresh token** da própria plataforma, com regras de sessão e rate limiting nos endpoints de auth. |
 | **Tenant** | Organização ou espaço isolado. Utilizadores podem pertencer a vários tenants e **alternar o tenant ativo** (contexto para autorização e dados). |
 | **Membership e roles** | Ligação de um utilizador a um tenant, com **papéis** configuráveis por tenant. |
+| **Administração de plataforma** | Utilizadores com claim `prole=plat_admin` gerem tenants e applications globais (modelo tipo realm admin). |
 | **Applications e clients** | Aplicações registadas no IdP com **clientes OAuth** (públicos ou confidenciais). O fluxo de *exchange* exige contexto de cliente (incluindo **PKCE** para clientes públicos). |
 | **Auditoria** | Registo de eventos relevantes para rastreio e conformidade. |
 | **JWKS** | Chaves públicas em `/.well-known/jwks.json` para que outros serviços validem JWT emitidos por esta API. |
 
-O **frontend** é um painel administrativo (SPA) que consome a API versionada em URL (`/v1.0/...`, conforme configuração). O **backend** implementa a API, persistência em **MySQL** (EF Core), integração **Firebase Admin**, e-mail via **AWS SES** (configurável), e **TenancyKit** para resolver o tenant a partir de claims.
+O **frontend** é um painel administrativo (SPA) que consome a API versionada em URL (`/v1.0/...`, conforme configuração). O **backend** implementa a API, persistência em **PostgreSQL** (EF Core + Npgsql), integração **Firebase Admin**, e-mail via **AWS SES** (configurável), e **TenancyKit** para resolver o tenant a partir de claims.
 
 Para detalhes de API, exemplos de *exchange* e convenções de código do backend, consulte [backend/README.md](backend/README.md). Para estrutura de pastas e serviços HTTP do SPA, consulte [frontend/README.md](frontend/README.md).
 
@@ -39,7 +40,8 @@ frontend/    → SPA React 19 + TypeScript + Vite + Material UI
 |------------|-----|
 | [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) | Compilar e executar o backend |
 | [Node.js](https://nodejs.org/) (versão compatível com `frontend/package.json`) | Instalar dependências e executar o frontend |
-| [MySQL](https://dev.mysql.com/downloads/mysql/) 8.x | Base de dados do backend |
+| [PostgreSQL](https://www.postgresql.org/download/) 14+ | Base de dados do backend |
+| [Redis](https://redis.io/downloads/) | Cache de resolução de tenant |
 | [Firebase](https://firebase.google.com/) | Projeto com Authentication; credenciais para o Admin SDK |
 | (Opcional) [AWS CLI / credenciais](https://aws.amazon.com/cli/) | Envio de e-mail (SES) em ambientes que usem SES de verdade |
 
@@ -59,29 +61,65 @@ Diretório de trabalho: `backend/`.
 
 ### 1. Base de dados
 
-1. Crie uma base MySQL (por exemplo `idpplatform_db`).
+1. Crie uma base PostgreSQL (por exemplo `idpplatform_db`).
 2. Edite `IdPPlatform.API/appsettings.Development.json` e ajuste `Database:ConnectionString` ao seu servidor, utilizador, palavra-passe e nome da base.
 
 O ficheiro de exemplo no repositório usa um formato semelhante a:
 
-`Server=localhost;Port=3306;Database=idpplatform_db;Uid=...;Pwd=...;CharSet=utf8mb4;`
+`Host=localhost;Port=5432;Database=idpplatform_db;Username=...;Password=...`
 
 ### 2. Firebase e credenciais Google
 
-Em `appsettings.Development.json`, defina `Firebase:ProjectId` com o ID do projeto Firebase.
+Em `appsettings.Development.json`, defina `Firebase:ProjectId` com o ID do projeto Firebase (fallback para quando a variável de ambiente não estiver definida).
 
-O código inicializa o Firebase Admin com **Application Default Credentials** (`GoogleCredential.GetApplicationDefault()`). Em desenvolvimento, configure uma destas formas:
+O código inicializa o Firebase Admin com **Application Default Credentials** (`GoogleCredential.GetApplicationDefault()`) e resolve `ProjectId` pela ordem:
+
+1. `GOOGLE_CLOUD_PROJECT` (variável de ambiente)  
+2. `Firebase:ProjectId` (appsettings)
+
+Em desenvolvimento, configure uma destas formas para credenciais:
 
 - Variável de ambiente `GOOGLE_APPLICATION_CREDENTIALS` apontando para um ficheiro JSON de **conta de serviço** do Google Cloud com permissões para o projeto Firebase; ou  
 - `gcloud auth application-default login` (quando aplicável ao teu fluxo).
 
-Sem credenciais válidas, a verificação de tokens Firebase falhará.
+Notas importantes:
 
-### 3. JWT e restantes secções
+- `gcloud config set project ...` ajusta o projeto padrão do CLI, mas **não** exporta variáveis para o processo `.NET`.
+- Se quiser alinhar automaticamente com o projeto ativo do gcloud, exporte `GOOGLE_CLOUD_PROJECT` com o valor de `gcloud config get-value project`.
+- Sem credenciais válidas, a verificação de tokens Firebase falhará.
 
-No mesmo `appsettings.Development.json`, ajuste `Jwt` (`Issuer`, `Audience`, `SigningKey` forte em produção). Opcionalmente refine `Session`, `RateLimit`, `Invite` e `Email` conforme [backend/README.md](backend/README.md).
+### 3. JWT e secções de runtime
 
-### 4. Migrações EF Core
+No mesmo `appsettings.Development.json`, ajuste `Jwt` (`Issuer`, `Audience`, `SigningKey` forte em produção).
+
+Refine `Session`, `RateLimit`, `Invite`, `Email` e `Redis` conforme [backend/README.md](backend/README.md).
+
+### 4. Bootstrap inicial seguro (plataforma virgem)
+
+Após aplicar migrações, a base fica somente com **schema** (sem seeds de negócio). Toda configuração inicial é feita via UI.
+
+Com banco novo:
+
+1. Suba backend e frontend normalmente.
+2. O frontend redireciona para `/bootstrap` enquanto `requiresBootstrap=true`.
+3. Faça login com Google/Firebase na etapa 1 do wizard.
+4. Na etapa 2, confirme/ajuste tenant, application e OAuth client iniciais.
+5. O backend cria **root admin**, tenant, roles, application e client numa transação única e fecha o bootstrap de forma irreversível.
+6. Depois disso, `/platform/bootstrap` e `/bootstrap` ficam bloqueados para sempre, e o fluxo segue para `/login`.
+
+### 5. AWS SES e variáveis de ambiente
+
+O serviço de e-mail usa `Email:FromAddress` e `Email:Region` do appsettings e obtém credenciais pela cadeia padrão do AWS SDK.
+
+Variáveis úteis (documentadas em `EnvironmentVariablesDocumentation` nos appsettings):
+
+- `AWS_ACCESS_KEY_ID`
+- `AWS_SECRET_ACCESS_KEY`
+- `AWS_SESSION_TOKEN` (credenciais temporárias)
+- `AWS_PROFILE`
+- `AWS_REGION`
+
+### 6. Migrações EF Core
 
 A partir da pasta `backend/`:
 
@@ -89,7 +127,7 @@ A partir da pasta `backend/`:
 dotnet ef database update --project IdPPlatform.Infrastructure --startup-project IdPPlatform.API
 ```
 
-### 5. Executar a API
+### 7. Executar a API
 
 ```bash
 dotnet run --project IdPPlatform.API
@@ -123,6 +161,11 @@ Variáveis (ver também [frontend/.env.example](frontend/.env.example)):
 | `VITE_API_BASE_URL` | URL base da API (ex.: `http://localhost:5000`) |
 | `VITE_API_VERSION` | Segmento de versão na URL (ex.: `1.0` → pedidos em `/v1.0/...`) |
 | `VITE_API_TIMEOUT_MS` | Timeout HTTP em milissegundos |
+| `VITE_OAUTH_CLIENT_ID` | Fallback de client usado no exchange (o login prioriza `GET /platform/status`) |
+| `VITE_FIREBASE_API_KEY` | Chave API do projeto Firebase |
+| `VITE_FIREBASE_AUTH_DOMAIN` | Domínio Auth do Firebase |
+| `VITE_FIREBASE_PROJECT_ID` | Project ID Firebase |
+| `VITE_FIREBASE_APP_ID` | App ID Web do Firebase |
 
 A URL e a versão devem corresponder ao backend em execução.
 
@@ -146,11 +189,12 @@ npm run preview  # pré-visualizar o build localmente
 
 ## Ordem sugerida no dia a dia
 
-1. Arrancar **MySQL** e garantir que a connection string está correta.  
+1. Arrancar **PostgreSQL** e **Redis** e garantir a configuração de conexão.  
 2. Aplicar **migrações** se o esquema mudou.  
 3. Executar o **backend** (`dotnet run --project IdPPlatform.API`).  
 4. Configurar **`.env`** do frontend e executar **`npm run dev`**.  
-5. Autenticar no painel com um utilizador que exista no **Firebase** e que consiga completar o fluxo de *exchange* conforme as regras da API (cliente OAuth, PKCE quando aplicável).
+5. Se for primeira execução, concluir `/bootstrap` (irreversível) para definir o root admin.  
+6. Depois, autenticar no `/login` com Firebase + exchange PKCE.
 
 ---
 

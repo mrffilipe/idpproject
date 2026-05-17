@@ -55,6 +55,22 @@ public sealed class AuthController : V1ApiControllerBase
     }
 
     [Authorize]
+    [HttpPost("subscribe")]
+    public async Task<IActionResult> SubscribeTenant([FromBody] SubscribeTenantBody body, CancellationToken cancellationToken)
+    {
+        var result = await _auth.SubscribeTenantAsync(
+            new SubscribeTenantRequest
+            {
+                TenantName = body.TenantName,
+                TenantKey = body.TenantKey,
+                PlanCode = body.PlanCode,
+                ExternalCustomerId = body.ExternalCustomerId,
+            },
+            cancellationToken);
+        return Ok(result);
+    }
+
+    [Authorize]
     [HttpPost("switch-tenant")]
     public async Task<IActionResult> SwitchTenant([FromBody] SwitchTenantBody body, CancellationToken cancellationToken)
     {
@@ -104,5 +120,10 @@ public sealed class AuthController : V1ApiControllerBase
         string? CodeChallenge,
         string? CodeChallengeMethod);
     public sealed record RefreshTokenBody(string RefreshToken);
+    public sealed record SubscribeTenantBody(
+        string TenantName,
+        string TenantKey,
+        string? PlanCode,
+        string? ExternalCustomerId);
     public sealed record SwitchTenantBody(Guid TenantId, string? RefreshToken);
 }

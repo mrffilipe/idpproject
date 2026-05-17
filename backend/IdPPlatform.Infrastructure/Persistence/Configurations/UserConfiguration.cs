@@ -35,5 +35,14 @@ public sealed class UserConfiguration : BaseEntityConfiguration<User>
         builder.Property(x => x.IsActive)
             .HasColumnName("is_active")
             .IsRequired();
+
+        builder.Property(x => x.IsPlatformAdmin)
+            .HasColumnName("is_platform_admin")
+            .IsRequired();
+
+        builder.HasIndex(x => x.IsPlatformAdmin)
+            .HasDatabaseName("IX_users_single_platform_admin")
+            .IsUnique()
+            .HasFilter("is_platform_admin = true");
     }
 }

@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace IdPPlatform.Infrastructure.Persistence.Configurations;
 
-public sealed class ApplicationClientConfiguration : TenantEntityConfiguration<ApplicationClient>
+public sealed class ApplicationClientConfiguration : BaseEntityConfiguration<ApplicationClient>
 {
     public override void Configure(EntityTypeBuilder<ApplicationClient> builder)
     {
@@ -46,5 +46,10 @@ public sealed class ApplicationClientConfiguration : TenantEntityConfiguration<A
 
         builder.HasIndex(x => x.ClientId)
             .IsUnique();
+
+        builder.HasOne(x => x.Application)
+            .WithMany(x => x.Clients)
+            .HasForeignKey(x => x.ApplicationId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

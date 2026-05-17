@@ -9,6 +9,7 @@ interface AuthContextValue {
   email?: string
   tenantId?: string | null
   tenantRoles: string[]
+  platformRoles: string[]
   syncFromAuthResult: (result: AuthResult) => void
   logoutLocal: () => void
 }
@@ -35,6 +36,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       email: session?.email,
       tenantId: session?.tenantId,
       tenantRoles: session?.tenantRoles ?? [],
+      platformRoles: session?.platformRoles ?? [],
       syncFromAuthResult,
       logoutLocal,
     }),

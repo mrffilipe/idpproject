@@ -10,6 +10,7 @@ public class User : BaseEntity
     public string DisplayName { get; private set; } = string.Empty;
     public string? PhotoUrl { get; private set; }
     public bool IsActive { get; private set; }
+    public bool IsPlatformAdmin { get; private set; }
 
     public ICollection<ExternalIdentity> ExternalIdentities { get; private set; } = new List<ExternalIdentity>();
     public ICollection<TenantMembership> Memberships { get; private set; } = new List<TenantMembership>();
@@ -32,6 +33,7 @@ public class User : BaseEntity
         DisplayName = displayName.Trim();
         PhotoUrl = photoUrl?.Trim();
         IsActive = true;
+        IsPlatformAdmin = false;
     }
 
     public void UpdateProfile(string displayName, string? photoUrl)
@@ -43,5 +45,10 @@ public class User : BaseEntity
 
         DisplayName = displayName.Trim();
         PhotoUrl = photoUrl?.Trim();
+    }
+
+    public void PromoteToPlatformAdministrator()
+    {
+        IsPlatformAdmin = true;
     }
 }

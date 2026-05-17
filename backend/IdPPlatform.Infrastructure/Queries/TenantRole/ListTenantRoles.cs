@@ -31,7 +31,7 @@ public sealed class ListTenantRoles : IListTenantRoles
             {
                 Id = x.Id,
                 TenantId = x.TenantId,
-                Key = x.Key,
+                Key = x.Key.Value,
                 Name = x.Name,
                 Description = x.Description,
                 IsSystem = x.IsSystem,

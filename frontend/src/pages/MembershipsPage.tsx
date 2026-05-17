@@ -1,19 +1,16 @@
 import DeleteIcon from '@mui/icons-material/Delete'
 import {
-  Alert,
   Button,
   IconButton,
   MenuItem,
   Stack,
-  Table,
-  TableBody,
   TableCell,
-  TableHead,
   TableRow,
   TextField,
+  Tooltip,
 } from '@mui/material'
 import { useEffect, useState } from 'react'
-import { PageCard } from '../components/PageCard'
+import { DataTable, FeedbackAlerts, FormGrid, FormGridItem, PageHeader, SectionCard, StatusChip } from '../components/ui'
 import { useTenant } from '../contexts/TenantContext'
 import { createMembership, listMembershipsByTenant, revokeMembership, updateMembershipRole } from '../services'
 import type { Membership } from '../types'
@@ -83,7 +80,7 @@ export function MembershipsPage() {
 
     try {
       await updateMembershipRole(membershipId, { roles: [updateRole] })
-      setSuccess('Role da membership atualizada.')
+      setSuccess('Papel da membership atualizado.')
       if (tenantId) {
         await loadMemberships(tenantId)
       }
@@ -107,102 +104,98 @@ export function MembershipsPage() {
   }
 
   return (
-    <Stack spacing={2}>
-      <PageCard title="Memberships por Tenant" subtitle="POST/GET /v1.0/tenants/{tenantId}/memberships">
+    <Stack spacing={3}>
+      <PageHeader title="Memberships" description="Membros e papéis vinculados ao tenant selecionado." />
+      <FeedbackAlerts success={success} error={error} />
+
+      <SectionCard title="Membros do tenant">
         <Stack spacing={2}>
-          {success ? <Alert severity="success">{success}</Alert> : null}
-          {error ? <Alert severity="error">{error}</Alert> : null}
           <TextField
             label="Tenant selecionado"
             value={tenantId ?? 'Nenhum tenant selecionado'}
             slotProps={{ input: { readOnly: true } }}
+            size="small"
+            sx={{ maxWidth: 480 }}
           />
-          <Table size="small">
-            <TableHead>
-              <TableRow>
-                <TableCell>Id</TableCell>
-                <TableCell>UserId</TableCell>
-                <TableCell>Roles</TableCell>
-                <TableCell>Ativo</TableCell>
-                <TableCell align="right">Ações</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {items.map((item) => (
-                <TableRow key={item.id}>
-                  <TableCell>{item.id}</TableCell>
-                  <TableCell>{item.userId}</TableCell>
-                  <TableCell>{item.roles.join(', ')}</TableCell>
-                  <TableCell>{item.isActive ? 'Sim' : 'Não'}</TableCell>
-                  <TableCell align="right">
-                    <IconButton color="error" onClick={() => void handleDelete(item.id)}>
-                      <DeleteIcon />
+          <DataTable
+            columns={[
+              { id: 'id', label: 'Id', minWidth: 120 },
+              { id: 'userId', label: 'UserId', minWidth: 120 },
+              { id: 'roles', label: 'Papéis' },
+              { id: 'active', label: 'Ativo' },
+              { id: 'actions', label: 'Ações', align: 'right' },
+            ]}
+            rows={items.map((item) => (
+              <TableRow key={item.id} hover>
+                <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.75rem' }}>{item.id}</TableCell>
+                <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.75rem' }}>{item.userId}</TableCell>
+                <TableCell>{item.roles.join(', ')}</TableCell>
+                <TableCell>
+                  <StatusChip label={item.isActive ? 'Ativo' : 'Inativo'} variant={item.isActive ? 'success' : 'default'} />
+                </TableCell>
+                <TableCell align="right">
+                  <Tooltip title="Revogar membership">
+                    <IconButton color="error" size="small" onClick={() => void handleDelete(item.id)}>
+                      <DeleteIcon fontSize="small" />
                     </IconButton>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </Stack>
-      </PageCard>
-
-      <PageCard title="Criar Membership" subtitle="POST /v1.0/tenants/{tenantId}/memberships">
-        <Stack spacing={2} component="form" onSubmit={handleCreate}>
-          <TextField
-            label="User Id"
-            value={userId}
-            onChange={(event) => setUserId(event.target.value)}
-            required
-          />
-          <TextField
-            select
-            label="Role"
-            value={createRole}
-            onChange={(event) => setCreateRole(event.target.value)}
-          >
-            {roles.map((role) => (
-              <MenuItem key={role} value={role}>
-                {role}
-              </MenuItem>
+                  </Tooltip>
+                </TableCell>
+              </TableRow>
             ))}
-          </TextField>
-          <Button type="submit" variant="contained">
+            emptyDescription={tenantId ? 'Nenhuma membership neste tenant.' : 'Selecione um tenant em Tenants.'}
+          />
+        </Stack>
+      </SectionCard>
+
+      <SectionCard title="Criar membership">
+        <Stack spacing={2} component="form" onSubmit={handleCreate}>
+          <FormGrid>
+            <FormGridItem>
+              <TextField label="User Id" value={userId} onChange={(e) => setUserId(e.target.value)} required fullWidth />
+            </FormGridItem>
+            <FormGridItem>
+              <TextField select label="Papel" value={createRole} onChange={(e) => setCreateRole(e.target.value)} fullWidth>
+                {roles.map((role) => (
+                  <MenuItem key={role} value={role}>
+                    {role}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </FormGridItem>
+          </FormGrid>
+          <Button type="submit" variant="contained" sx={{ alignSelf: 'flex-start' }}>
             Criar
           </Button>
         </Stack>
-      </PageCard>
+      </SectionCard>
 
-      <PageCard title="Atualizar Role da Membership" subtitle="PATCH /v1.0/Memberships/{id}">
+      <SectionCard title="Atualizar papel">
         <Stack spacing={2} component="form" onSubmit={handleUpdate}>
-          <TextField
-            select
-            label="Membership"
-            value={membershipId}
-            onChange={(event) => setMembershipId(event.target.value)}
-          >
-            {items.map((item) => (
-              <MenuItem key={item.id} value={item.id}>
-                {item.id}
-              </MenuItem>
-            ))}
-          </TextField>
-          <TextField
-            select
-            label="Role"
-            value={updateRole}
-            onChange={(event) => setUpdateRole(event.target.value)}
-          >
-            {roles.map((role) => (
-              <MenuItem key={role} value={role}>
-                {role}
-              </MenuItem>
-            ))}
-          </TextField>
-          <Button type="submit" variant="contained">
+          <FormGrid>
+            <FormGridItem>
+              <TextField select label="Membership" value={membershipId} onChange={(e) => setMembershipId(e.target.value)} fullWidth>
+                {items.map((item) => (
+                  <MenuItem key={item.id} value={item.id}>
+                    {item.id}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </FormGridItem>
+            <FormGridItem>
+              <TextField select label="Papel" value={updateRole} onChange={(e) => setUpdateRole(e.target.value)} fullWidth>
+                {roles.map((role) => (
+                  <MenuItem key={role} value={role}>
+                    {role}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </FormGridItem>
+          </FormGrid>
+          <Button type="submit" variant="contained" sx={{ alignSelf: 'flex-start' }}>
             Atualizar
           </Button>
         </Stack>
-      </PageCard>
+      </SectionCard>
     </Stack>
   )
 }

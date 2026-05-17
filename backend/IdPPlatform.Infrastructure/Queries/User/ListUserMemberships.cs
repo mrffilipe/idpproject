@@ -24,6 +24,8 @@ public sealed class ListUserMemberships : IListUserMemberships
         var query = _context.TenantMemberships
             .AsNoTracking()
             .Include(x => x.Tenant)
+            .Include(x => x.Roles)
+            .ThenInclude(x => x.Role)
             .Where(x => x.UserId == request.UserId && x.IsActive);
 
         var total = await query.CountAsync(cancellationToken);
@@ -36,7 +38,7 @@ public sealed class ListUserMemberships : IListUserMemberships
                 MembershipId = x.Id,
                 TenantId = x.TenantId,
                 TenantName = x.Tenant.Name,
-                TenantKey = x.Tenant.Key,
+                TenantKey = x.Tenant.Key.Value,
                 Roles = x.Roles.Select(role => role.Role.Key.Value).ToList()
             })
             .ToListAsync(cancellationToken);

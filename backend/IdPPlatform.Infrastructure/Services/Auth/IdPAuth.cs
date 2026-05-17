@@ -6,6 +6,10 @@ using IdPPlatform.Application.Services.RefreshTokenHasher;
 using IdPPlatform.Application.Services.TokenIssuer;
 using IdPPlatform.Application.Services.UnitOfWork;
 using IdPPlatform.Application.Services.UserScope;
+using IdPPlatform.Application.UseCases.Auth.Commands.SubscribeTenant;
+using SubscribeTenantCommandRequest = IdPPlatform.Application.UseCases.Auth.Commands.SubscribeTenant.SubscribeTenantRequest;
+using SubscribeTenantRequestDto = IdPPlatform.Application.Services.Auth.SubscribeTenantRequest;
+using IdPPlatform.Domain.Constants;
 using IdPPlatform.Domain.Entities;
 using IdPPlatform.Domain.Enums;
 using IdPPlatform.Domain.Exceptions;
@@ -28,6 +32,8 @@ public sealed class IdPAuth : IAuth
     private readonly ITokenIssuer _tokenIssuer;
     private readonly IRefreshTokenHasher _refreshTokenHasher;
     private readonly IUserScope _userScope;
+    private readonly IPlatformConfigurationRepository _platformConfigurations;
+    private readonly ISubscribeTenant _subscribeTenant;
     private readonly IUnitOfWork _unitOfWork;
     private readonly JwtOptions _jwtOptions;
     private readonly SessionOptions _sessionOptions;
@@ -43,6 +49,8 @@ public sealed class IdPAuth : IAuth
         ITokenIssuer tokenIssuer,
         IRefreshTokenHasher refreshTokenHasher,
         IUserScope userScope,
+        IPlatformConfigurationRepository platformConfigurations,
+        ISubscribeTenant subscribeTenant,
         IUnitOfWork unitOfWork,
         IOptions<JwtOptions> jwtOptions,
         IOptions<SessionOptions> sessionOptions)
@@ -57,6 +65,8 @@ public sealed class IdPAuth : IAuth
         _tokenIssuer = tokenIssuer;
         _refreshTokenHasher = refreshTokenHasher;
         _userScope = userScope;
+        _platformConfigurations = platformConfigurations;
+        _subscribeTenant = subscribeTenant;
         _unitOfWork = unitOfWork;
         _jwtOptions = jwtOptions.Value;
         _sessionOptions = sessionOptions.Value;
@@ -66,6 +76,8 @@ public sealed class IdPAuth : IAuth
         ExchangeTokenRequest request,
         CancellationToken cancellationToken = default)
     {
+        await EnsurePlatformBootstrapCompletedAsync(cancellationToken);
+
         var client = await _applicationClientValidator.ValidateAsync(
             request.ClientId,
             request.ClientSecret,
@@ -101,21 +113,12 @@ public sealed class IdPAuth : IAuth
         }
 
         var memberships = await _memberships.ListByUserIdWithTenantAndRolesAsync(user.Id, cancellationToken);
-        var currentMembership = memberships
-            .Where(x => x.TenantId == client.TenantId)
-            .OrderBy(x => x.JoinedAt)
-            .FirstOrDefault();
-
-        if (memberships.Count > 0 && currentMembership is null)
-        {
-            throw new ForbiddenApplicationException(ApplicationErrorMessages.Auth.UserHasNoClientTenantMembership);
-        }
 
         var session = new AuthSession(
             user.Id,
             client.Id,
-            currentMembership?.TenantId,
-            currentMembership?.Id,
+            tenantId: null,
+            membershipId: null,
             DateTime.UtcNow.AddDays(_jwtOptions.RefreshTokenDays),
             request.UserAgent,
             request.IpAddress);
@@ -225,6 +228,48 @@ public sealed class IdPAuth : IAuth
             memberships);
     }
 
+    public async Task<AuthResult> SubscribeTenantAsync(
+        SubscribeTenantRequestDto request,
+        CancellationToken cancellationToken = default)
+    {
+        if (!_userScope.IsAuthenticated || _userScope.UserId == Guid.Empty || !_userScope.SessionId.HasValue)
+        {
+            throw new UnauthorizedApplicationException(ApplicationErrorMessages.Auth.AuthenticatedSessionRequired);
+        }
+
+        var provisioned = await _subscribeTenant.ExecuteAsync(
+            new SubscribeTenantCommandRequest
+            {
+                ActorUserId = _userScope.UserId,
+                SessionId = _userScope.SessionId.Value,
+                TenantName = request.TenantName,
+                TenantKey = request.TenantKey,
+                PlanCode = request.PlanCode,
+                ExternalCustomerId = request.ExternalCustomerId,
+            },
+            cancellationToken);
+
+        var session = await _sessions.GetForUpdateAsync(_userScope.SessionId.Value, cancellationToken)
+            ?? throw new UnauthorizedApplicationException(ApplicationErrorMessages.Auth.SessionNotFound);
+
+        session.SwitchTenant(provisioned.TenantId, provisioned.MembershipId);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        var user = await _users.GetForUpdateAsync(_userScope.UserId, cancellationToken)
+            ?? throw new UnauthorizedApplicationException(ApplicationErrorMessages.Auth.UserNotFound);
+
+        var memberships = await _memberships.ListByUserIdWithTenantAndRolesAsync(user.Id, cancellationToken);
+        var rawRefresh = GenerateRefreshToken();
+        var refreshToken = new RefreshToken(
+            session.Id,
+            _refreshTokenHasher.Hash(rawRefresh),
+            DateTime.UtcNow.AddDays(_jwtOptions.RefreshTokenDays));
+        await _refreshTokens.AddAsync(refreshToken, cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return BuildAuthResult(user, session, rawRefresh, memberships);
+    }
+
     public async Task LogoutAsync(string refreshToken, CancellationToken cancellationToken = default)
     {
         var hash = _refreshTokenHasher.Hash(refreshToken);
@@ -287,6 +332,7 @@ public sealed class IdPAuth : IAuth
         IReadOnlyList<TenantMembership> memberships)
     {
         var membership = memberships.FirstOrDefault(x => x.Id == session.MembershipId);
+        var platformRoles = ResolvePlatformRoles(user);
         var accessToken = _tokenIssuer.Issue(new TokenClaims
         {
             UserId = user.Id,
@@ -295,6 +341,7 @@ public sealed class IdPAuth : IAuth
             TenantId = session.TenantId,
             MembershipId = session.MembershipId,
             TenantRoles = membership?.Roles.Select(x => x.Role.Key.Value).ToList() ?? [],
+            PlatformRoles = platformRoles,
             Amr = ["pwd"]
         });
 
@@ -308,16 +355,27 @@ public sealed class IdPAuth : IAuth
             TenantId = session.TenantId,
             MembershipId = session.MembershipId,
             TenantRoles = membership?.Roles.Select(x => x.Role.Key.Value).ToList() ?? [],
+            PlatformRoles = platformRoles,
             Tenants = memberships
                 .Select(x => new AuthTenantSummaryDto
                 {
                     TenantId = x.TenantId,
                     TenantName = x.Tenant.Name,
-                    TenantKey = x.Tenant.Key,
+                    TenantKey = x.Tenant.Key.Value,
                     Roles = x.Roles.Select(role => role.Role.Key.Value).ToList()
                 })
                 .ToList()
         };
+    }
+
+    private static IReadOnlyList<string> ResolvePlatformRoles(User user)
+    {
+        if (user.IsPlatformAdmin)
+        {
+            return [PlatformRoleDefaults.PlatformAdministrator];
+        }
+
+        return [];
     }
 
     private static string GenerateRefreshToken()
@@ -349,6 +407,17 @@ public sealed class IdPAuth : IAuth
         foreach (var token in refreshTokens)
         {
             token.Revoke();
+        }
+    }
+
+    private async Task EnsurePlatformBootstrapCompletedAsync(CancellationToken cancellationToken)
+    {
+        var configuration = await _platformConfigurations.GetForUpdateAsync(cancellationToken);
+        var hasAnyPlatformAdmin = await _users.AnyPlatformAdministratorAsync(cancellationToken);
+        var isConfigured = configuration?.IsBootstrapped == true && configuration.RootUserId.HasValue && hasAnyPlatformAdmin;
+        if (!isConfigured)
+        {
+            throw new DomainBusinessRuleException(ApplicationErrorMessages.Auth.PlatformBootstrapRequired);
         }
     }
 }

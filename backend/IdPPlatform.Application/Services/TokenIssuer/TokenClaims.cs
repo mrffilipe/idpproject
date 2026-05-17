@@ -14,5 +14,7 @@ public sealed record TokenClaims
 
     public required IReadOnlyList<string> TenantRoles { get; init; }
 
+    public required IReadOnlyList<string> PlatformRoles { get; init; }
+
     public required IReadOnlyList<string> Amr { get; init; }
 }

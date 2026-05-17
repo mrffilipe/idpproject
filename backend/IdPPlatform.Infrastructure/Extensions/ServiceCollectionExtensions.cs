@@ -5,6 +5,7 @@ using IdPPlatform.Infrastructure.Configurations;
 using IdPPlatform.Infrastructure.Persistence;
 using IdPPlatform.Infrastructure.Persistence.Interceptors;
 using Amazon;
+using Amazon.Runtime;
 using Amazon.SimpleEmailV2;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -44,12 +45,35 @@ public static class ServiceCollectionExtensions
         services.AddOptions<FirebaseOptions>()
             .Bind(configuration.GetSection(FirebaseOptions.Section))
             .ValidateOnStart();
+        services.AddSingleton<IValidateOptions<FirebaseOptions>, FirebaseOptionsValidator>();
+        services.AddOptions<RedisOptions>()
+            .Bind(configuration.GetSection(RedisOptions.Section));
 
         services.AddHttpContextAccessor();
+        services.AddDistributedCaching(configuration);
         services.AddSingleton<IAmazonSimpleEmailServiceV2>(serviceProvider =>
         {
             var options = serviceProvider.GetRequiredService<IOptions<EmailOptions>>().Value;
             var region = RegionEndpoint.GetBySystemName(options.Region);
+
+            if (!string.IsNullOrWhiteSpace(options.AccessKeyId) &&
+                !string.IsNullOrWhiteSpace(options.SecretAccessKey))
+            {
+                if (!string.IsNullOrWhiteSpace(options.SessionToken))
+                {
+                    return new AmazonSimpleEmailServiceV2Client(
+                        new SessionAWSCredentials(
+                            options.AccessKeyId,
+                            options.SecretAccessKey,
+                            options.SessionToken),
+                        region);
+                }
+
+                return new AmazonSimpleEmailServiceV2Client(
+                    new BasicAWSCredentials(options.AccessKeyId, options.SecretAccessKey),
+                    region);
+            }
+
             return new AmazonSimpleEmailServiceV2Client(region);
         });
 
@@ -72,14 +96,26 @@ public static class ServiceCollectionExtensions
 
         services.AddDbContext<ApplicationDbContext>((serviceProvider, options) =>
         {
-            options.UseMySql(
-                connectionString,
-                new MySqlServerVersion(new Version(
-                    8,
-                    0,
-                    36)));
+            options.UseNpgsql(connectionString);
             options.AddInterceptors(serviceProvider.GetRequiredService<AuditInterceptor>());
         });
+        return services;
+    }
+
+    private static IServiceCollection AddDistributedCaching(this IServiceCollection services, IConfiguration configuration)
+    {
+        var redisOptions = configuration.GetSection(RedisOptions.Section).Get<RedisOptions>() ?? new RedisOptions();
+        if (!string.IsNullOrWhiteSpace(redisOptions.ConnectionString))
+        {
+            services.AddStackExchangeRedisCache(options =>
+            {
+                options.Configuration = redisOptions.ConnectionString;
+                options.InstanceName = redisOptions.InstanceName;
+            });
+            return services;
+        }
+
+        services.AddDistributedMemoryCache();
         return services;
     }
 
@@ -117,20 +153,38 @@ public static class ServiceCollectionExtensions
 
     private static IServiceCollection AddFirebase(this IServiceCollection services)
     {
-        services.AddSingleton(_ =>
+        services.AddSingleton(serviceProvider =>
         {
             if (FirebaseApp.DefaultInstance is not null)
             {
                 return FirebaseApp.DefaultInstance;
             }
 
+            var options = serviceProvider.GetRequiredService<IOptions<FirebaseOptions>>().Value;
+            GoogleCredential credential;
+            if (!string.IsNullOrWhiteSpace(options.CredentialPath))
+            {
+                credential = CredentialFactory
+                    .FromFile<ServiceAccountCredential>(options.CredentialPath)
+                    .ToGoogleCredential();
+            }
+            else
+            {
+                credential = GoogleCredential.GetApplicationDefault();
+            }
+
             return FirebaseApp.Create(new AppOptions
             {
-                Credential = GoogleCredential.GetApplicationDefault()
+                Credential = credential,
+                ProjectId = options.ProjectId
             });
         });
 
-        services.AddSingleton(_ => FirebaseAuth.DefaultInstance);
+        services.AddSingleton(serviceProvider =>
+        {
+            var app = serviceProvider.GetRequiredService<FirebaseApp>();
+            return FirebaseAuth.GetAuth(app);
+        });
         return services;
     }
 }

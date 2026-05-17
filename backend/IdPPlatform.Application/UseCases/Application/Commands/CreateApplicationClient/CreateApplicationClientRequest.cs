@@ -4,8 +4,6 @@ namespace IdPPlatform.Application.UseCases.Application.Commands.CreateApplicatio
 
 public sealed record CreateApplicationClientRequest
 {
-    public required Guid TenantId { get; init; }
-
     public required Guid ApplicationId { get; init; }
 
     public required string ClientId { get; init; }
@@ -19,4 +17,8 @@ public sealed record CreateApplicationClientRequest
     public required string AllowedScopes { get; init; }
 
     public required int AccessTokenTtlSeconds { get; init; }
+
+    public required Guid ActorUserId { get; init; }
+
+    public required IReadOnlyList<string> ActorPlatformRoles { get; init; }
 }

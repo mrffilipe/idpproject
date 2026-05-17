@@ -9,4 +9,8 @@ public sealed record InviteMemberRequest
     public required IReadOnlyCollection<string> Roles { get; init; }
 
     public required Guid InvitedByUserId { get; init; }
+
+    public required Guid ActorUserId { get; init; }
+
+    public required IReadOnlyCollection<string> ActorPlatformRoles { get; init; }
 }

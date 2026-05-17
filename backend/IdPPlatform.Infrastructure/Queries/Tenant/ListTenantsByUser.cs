@@ -35,7 +35,7 @@ public sealed class ListTenantsByUser : IListTenantsByUser
             {
                 Id = x.TenantId,
                 Name = x.Tenant.Name,
-                Key = x.Tenant.Key
+                Key = x.Tenant.Key.Value
             })
             .ToListAsync(cancellationToken);
 

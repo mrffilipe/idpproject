@@ -23,6 +23,8 @@ public sealed class ListMembershipsByTenant : IListMembershipsByTenant
         var pageSize = request.PageSize <= 0 ? 20 : request.PageSize;
         var query = _context.TenantMemberships
             .AsNoTracking()
+            .Include(x => x.Roles)
+            .ThenInclude(x => x.Role)
             .Where(x => x.TenantId == request.TenantId);
 
         var total = await query.CountAsync(cancellationToken);

@@ -39,4 +39,9 @@ public sealed class UserRepository : IUserRepository
         return _context.Users
             .AnyAsync(x => x.Email.Value == normalized, cancellationToken);
     }
+
+    public Task<bool> AnyPlatformAdministratorAsync(CancellationToken cancellationToken = default)
+    {
+        return _context.Users.AnyAsync(x => x.IsPlatformAdmin, cancellationToken);
+    }
 }

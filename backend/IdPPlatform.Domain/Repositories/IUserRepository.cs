@@ -11,4 +11,6 @@ public interface IUserRepository
     Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken = default);
 
     Task<bool> EmailAlreadyExistsAsync(string email, CancellationToken cancellationToken = default);
+
+    Task<bool> AnyPlatformAdministratorAsync(CancellationToken cancellationToken = default);
 }

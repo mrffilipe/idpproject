@@ -22,6 +22,7 @@ export interface AuthResult {
   tenantId?: string | null
   membershipId?: string | null
   tenantRoles: string[]
+  platformRoles: string[]
   tenants: AuthTenantSummary[]
 }
 

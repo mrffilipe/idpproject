@@ -12,6 +12,13 @@ public sealed class TenantInfoAdapter : ITenantInfo
         Name = tenant.Name;
     }
 
+    public TenantInfoAdapter(string id, string identifier, string name)
+    {
+        Id = id;
+        Identifier = identifier;
+        Name = name;
+    }
+
     public string Id { get; }
     public string Identifier { get; }
     public string Name { get; }

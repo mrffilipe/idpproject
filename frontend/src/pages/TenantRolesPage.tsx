@@ -1,6 +1,6 @@
-import { Alert, Button, Checkbox, MenuItem, Stack, Table, TableBody, TableCell, TableHead, TableRow, TextField } from '@mui/material'
+import { Button, Checkbox, FormControlLabel, MenuItem, Stack, TableCell, TableRow, TextField } from '@mui/material'
 import { useEffect, useState } from 'react'
-import { PageCard } from '../components/PageCard'
+import { DataTable, FeedbackAlerts, FormGrid, FormGridItem, PageHeader, SectionCard, StatusChip } from '../components/ui'
 import { useTenant } from '../contexts/TenantContext'
 import { createTenantRole, listTenantRoles, updateTenantRole } from '../services'
 import type { TenantRole } from '../types'
@@ -61,7 +61,7 @@ export function TenantRolesPage() {
         name,
         description: description || null,
       })
-      setSuccess(`Role criada: ${result.id}`)
+      setSuccess(`Papel criado: ${result.id}`)
       setKey('')
       setName('')
       setDescription('')
@@ -84,7 +84,7 @@ export function TenantRolesPage() {
         description: roleDescription || null,
         isActive: roleIsActive,
       })
-      setSuccess('Role atualizada com sucesso.')
+      setSuccess('Papel atualizado com sucesso.')
       if (tenantId) {
         await loadRoles(tenantId)
       }
@@ -94,93 +94,106 @@ export function TenantRolesPage() {
   }
 
   return (
-    <Stack spacing={2}>
-      <PageCard title="Tenant Roles" subtitle="GET/POST /v1.0/tenants/{tenantId}/roles">
+    <Stack spacing={3}>
+      <PageHeader title="Papéis do tenant" description="Papéis customizados para controle de acesso no tenant selecionado." />
+      <FeedbackAlerts success={success} error={error} />
+
+      <SectionCard title="Papéis cadastrados">
         <Stack spacing={2}>
-          {success ? <Alert severity="success">{success}</Alert> : null}
-          {error ? <Alert severity="error">{error}</Alert> : null}
           <TextField
             label="Tenant selecionado"
             value={tenantId ?? 'Nenhum tenant selecionado'}
             slotProps={{ input: { readOnly: true } }}
+            size="small"
+            sx={{ maxWidth: 480 }}
           />
-          <Table size="small">
-            <TableHead>
-              <TableRow>
-                <TableCell>Id</TableCell>
-                <TableCell>Key</TableCell>
-                <TableCell>Nome</TableCell>
-                <TableCell>Descrição</TableCell>
-                <TableCell>Sistema</TableCell>
-                <TableCell>Ativo</TableCell>
+          <DataTable
+            columns={[
+              { id: 'id', label: 'Id', minWidth: 120 },
+              { id: 'key', label: 'Chave' },
+              { id: 'name', label: 'Nome' },
+              { id: 'description', label: 'Descrição' },
+              { id: 'system', label: 'Sistema' },
+              { id: 'active', label: 'Ativo' },
+            ]}
+            rows={roles.map((role) => (
+              <TableRow key={role.id} hover>
+                <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.75rem' }}>{role.id}</TableCell>
+                <TableCell>{role.key}</TableCell>
+                <TableCell>{role.name}</TableCell>
+                <TableCell>{role.description ?? '-'}</TableCell>
+                <TableCell>
+                  <StatusChip label={role.isSystem ? 'Sistema' : 'Custom'} variant={role.isSystem ? 'info' : 'default'} />
+                </TableCell>
+                <TableCell>
+                  <StatusChip label={role.isActive ? 'Ativo' : 'Inativo'} variant={role.isActive ? 'success' : 'default'} />
+                </TableCell>
               </TableRow>
-            </TableHead>
-            <TableBody>
-              {roles.map((role) => (
-                <TableRow key={role.id}>
-                  <TableCell>{role.id}</TableCell>
-                  <TableCell>{role.key}</TableCell>
-                  <TableCell>{role.name}</TableCell>
-                  <TableCell>{role.description ?? '-'}</TableCell>
-                  <TableCell>{role.isSystem ? 'Sim' : 'Não'}</TableCell>
-                  <TableCell>{role.isActive ? 'Sim' : 'Não'}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </Stack>
-      </PageCard>
-
-      <PageCard title="Criar Tenant Role" subtitle="POST /v1.0/tenants/{tenantId}/roles">
-        <Stack spacing={2} component="form" onSubmit={handleCreate}>
-          <TextField label="Key" value={key} onChange={(event) => setKey(event.target.value)} required />
-          <TextField label="Nome" value={name} onChange={(event) => setName(event.target.value)} required />
-          <TextField
-            label="Descrição"
-            value={description}
-            onChange={(event) => setDescription(event.target.value)}
+            ))}
+            emptyDescription={tenantId ? 'Nenhum papel cadastrado.' : 'Selecione um tenant em Tenants.'}
           />
-          <Button type="submit" variant="contained">
+        </Stack>
+      </SectionCard>
+
+      <SectionCard title="Criar papel">
+        <Stack spacing={2} component="form" onSubmit={handleCreate}>
+          <FormGrid>
+            <FormGridItem>
+              <TextField label="Chave" value={key} onChange={(e) => setKey(e.target.value)} required fullWidth />
+            </FormGridItem>
+            <FormGridItem>
+              <TextField label="Nome" value={name} onChange={(e) => setName(e.target.value)} required fullWidth />
+            </FormGridItem>
+            <FormGridItem xs={12} md={12}>
+              <TextField label="Descrição" value={description} onChange={(e) => setDescription(e.target.value)} fullWidth />
+            </FormGridItem>
+          </FormGrid>
+          <Button type="submit" variant="contained" sx={{ alignSelf: 'flex-start' }}>
             Criar
           </Button>
         </Stack>
-      </PageCard>
+      </SectionCard>
 
-      <PageCard title="Atualizar Tenant Role" subtitle="PATCH /v1.0/TenantRoles/{id}">
+      <SectionCard title="Atualizar papel">
         <Stack spacing={2} component="form" onSubmit={handleUpdate}>
-          <TextField
-            select
-            label="Role"
-            value={roleId}
-            onChange={(event) => {
-              const selected = roles.find((role) => role.id === event.target.value)
-              setRoleId(event.target.value)
-              setRoleName(selected?.name ?? '')
-              setRoleDescription(selected?.description ?? '')
-              setRoleIsActive(selected?.isActive ?? true)
-            }}
-          >
-            {roles.map((role) => (
-              <MenuItem key={role.id} value={role.id}>
-                {role.name}
-              </MenuItem>
-            ))}
-          </TextField>
-          <TextField label="Nome" value={roleName} onChange={(event) => setRoleName(event.target.value)} required />
-          <TextField
-            label="Descrição"
-            value={roleDescription}
-            onChange={(event) => setRoleDescription(event.target.value)}
+          <FormGrid>
+            <FormGridItem>
+              <TextField
+                select
+                label="Papel"
+                value={roleId}
+                onChange={(event) => {
+                  const selected = roles.find((role) => role.id === event.target.value)
+                  setRoleId(event.target.value)
+                  setRoleName(selected?.name ?? '')
+                  setRoleDescription(selected?.description ?? '')
+                  setRoleIsActive(selected?.isActive ?? true)
+                }}
+                fullWidth
+              >
+                {roles.map((role) => (
+                  <MenuItem key={role.id} value={role.id}>
+                    {role.name}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </FormGridItem>
+            <FormGridItem>
+              <TextField label="Nome" value={roleName} onChange={(e) => setRoleName(e.target.value)} required fullWidth />
+            </FormGridItem>
+            <FormGridItem xs={12} md={12}>
+              <TextField label="Descrição" value={roleDescription} onChange={(e) => setRoleDescription(e.target.value)} fullWidth />
+            </FormGridItem>
+          </FormGrid>
+          <FormControlLabel
+            control={<Checkbox checked={roleIsActive} onChange={(e) => setRoleIsActive(e.target.checked)} />}
+            label="Papel ativo"
           />
-          <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-            <Checkbox checked={roleIsActive} onChange={(event) => setRoleIsActive(event.target.checked)} />
-            Ativo
-          </Stack>
-          <Button type="submit" variant="contained">
+          <Button type="submit" variant="contained" sx={{ alignSelf: 'flex-start' }}>
             Atualizar
           </Button>
         </Stack>
-      </PageCard>
+      </SectionCard>
     </Stack>
   )
 }

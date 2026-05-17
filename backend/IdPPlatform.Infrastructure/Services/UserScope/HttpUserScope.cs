@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using IdPPlatform.Application.Services.UserScope;
+using IdPPlatform.Domain.Constants;
 using Microsoft.AspNetCore.Http;
 
 namespace IdPPlatform.Infrastructure.Services.UserScope;
@@ -30,9 +31,22 @@ public sealed class HttpUserScope : IUserScope
         .Distinct(StringComparer.OrdinalIgnoreCase)
         .ToList() ?? [];
 
+    public IReadOnlyList<string> PlatformRoles => _httpContextAccessor.HttpContext?.User?
+        .FindAll(PlatformRoleDefaults.ClaimType)
+        .Select(x => x.Value.Trim().ToLowerInvariant())
+        .Where(x => x.Length > 0)
+        .Distinct(StringComparer.OrdinalIgnoreCase)
+        .ToList() ?? [];
+
     public bool HasAnyTenantRole(params string[] roleKeys)
     {
         var roles = TenantRoles.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        return roleKeys.Any(roles.Contains);
+    }
+
+    public bool HasAnyPlatformRole(params string[] roleKeys)
+    {
+        var roles = PlatformRoles.ToHashSet(StringComparer.OrdinalIgnoreCase);
         return roleKeys.Any(roles.Contains);
     }
 

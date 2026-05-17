@@ -22,4 +22,9 @@ export const env = {
   apiBaseUrl: getRequiredEnv('VITE_API_BASE_URL').replace(/\/$/, ''),
   apiVersion: getRequiredEnv('VITE_API_VERSION'),
   apiTimeoutMs: getPositiveNumberFromEnv('VITE_API_TIMEOUT_MS'),
+  oauthClientId: getRequiredEnv('VITE_OAUTH_CLIENT_ID'),
+  firebaseApiKey: getRequiredEnv('VITE_FIREBASE_API_KEY'),
+  firebaseAuthDomain: getRequiredEnv('VITE_FIREBASE_AUTH_DOMAIN'),
+  firebaseProjectId: getRequiredEnv('VITE_FIREBASE_PROJECT_ID'),
+  firebaseAppId: getRequiredEnv('VITE_FIREBASE_APP_ID'),
 }

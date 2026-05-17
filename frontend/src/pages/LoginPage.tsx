@@ -1,33 +1,41 @@
-import { Alert, Box, Button, Stack, TextField } from '@mui/material'
+import { Stack, Typography } from '@mui/material'
 import { useState } from 'react'
-import { useNavigate } from 'react-router'
-import { PageCard } from '../components/PageCard'
+import { useNavigate, useSearchParams } from 'react-router'
+import { AuthLayout } from '../components/AuthLayout'
+import { FeedbackAlerts, GoogleSignInButton } from '../components/ui'
+import { env, signInWithGoogleAndGetIdToken } from '../config'
 import { useAuth } from '../contexts/AuthContext'
-import { exchangeToken } from '../services'
+import { exchangeToken, getPlatformStatus } from '../services'
 import { getApiErrorMessage } from '../utils/apiError'
+import { generatePkcePair } from '../utils/pkce'
 
 export function LoginPage() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { syncFromAuthResult } = useAuth()
 
-  const [identityToken, setIdentityToken] = useState('')
-  const [clientId, setClientId] = useState('')
-  const [clientSecret, setClientSecret] = useState('')
-  const [redirectUri, setRedirectUri] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>): Promise<void> {
-    event.preventDefault()
+  async function handleLoginWithGoogle(): Promise<void> {
     setLoading(true)
     setError(null)
 
     try {
+      const identityToken = await signInWithGoogleAndGetIdToken()
+      const { codeVerifier, codeChallenge } = await generatePkcePair()
+      if (!codeVerifier) {
+        throw new Error('Falha ao preparar PKCE para login.')
+      }
+
+      const status = await getPlatformStatus()
+      const clientId = status.oauthClientId?.trim() || env.oauthClientId
+
       const result = await exchangeToken({
         identityToken,
         clientId,
-        clientSecret: clientSecret || null,
-        redirectUri: redirectUri || null,
+        codeChallenge,
+        codeChallengeMethod: 'S256',
       })
       syncFromAuthResult(result)
       navigate('/')
@@ -39,46 +47,17 @@ export function LoginPage() {
   }
 
   return (
-    <Box sx={{ maxWidth: 720, mx: 'auto', mt: 6 }}>
-      <PageCard
-        title="Login"
-        subtitle="Fluxo de Exchange Token (POST /v1.0/auth/exchange) com persistência de sessão."
-      >
-        <Box component="form" onSubmit={handleSubmit}>
-          <Stack spacing={2}>
-            {error ? <Alert severity="error">{error}</Alert> : null}
-            <TextField
-              label="Identity Token"
-              value={identityToken}
-              onChange={(event) => setIdentityToken(event.target.value)}
-              required
-              fullWidth
-            />
-            <TextField
-              label="Client Id"
-              value={clientId}
-              onChange={(event) => setClientId(event.target.value)}
-              required
-              fullWidth
-            />
-            <TextField
-              label="Client Secret"
-              value={clientSecret}
-              onChange={(event) => setClientSecret(event.target.value)}
-              fullWidth
-            />
-            <TextField
-              label="Redirect Uri"
-              value={redirectUri}
-              onChange={(event) => setRedirectUri(event.target.value)}
-              fullWidth
-            />
-            <Button type="submit" variant="contained" disabled={loading}>
-              {loading ? 'Entrando...' : 'Entrar'}
-            </Button>
-          </Stack>
-        </Box>
-      </PageCard>
-    </Box>
+    <AuthLayout title="Bem-vindo de volta" subtitle="Entre com sua conta Google para acessar o painel">
+      <Stack spacing={2.5}>
+        <Typography variant="body2" color="text.secondary">
+          Autenticação segura via Firebase e troca de token PKCE com o backend.
+        </Typography>
+        <FeedbackAlerts
+          success={searchParams.get('bootstrapped') === '1' ? 'Bootstrap concluído. Faça login para acessar a plataforma.' : null}
+          error={error}
+        />
+        <GoogleSignInButton loading={loading} onClick={() => void handleLoginWithGoogle()} />
+      </Stack>
+    </AuthLayout>
   )
 }

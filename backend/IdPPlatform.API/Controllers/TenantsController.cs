@@ -40,6 +40,7 @@ public sealed class TenantsController : V1ApiControllerBase
         _listTenantsByUser = listTenantsByUser;
     }
 
+    [Authorize(Policy = "PlatformAdministrator")]
     [HttpPost]
     public async Task<IActionResult> CreateTenant([FromBody] CreateTenantBody body, CancellationToken cancellationToken)
     {
@@ -47,7 +48,9 @@ public sealed class TenantsController : V1ApiControllerBase
             new CreateTenantRequest
             {
                 Name = body.Name,
-                Key = body.Key
+                Key = body.Key,
+                ActorUserId = _userScope.UserId,
+                InitialAdministratorUserId = body.InitialAdministratorUserId
             },
             cancellationToken);
 
@@ -78,7 +81,9 @@ public sealed class TenantsController : V1ApiControllerBase
         var result = await _getTenantById.ExecuteAsync(
             new GetTenantByIdRequest
             {
-                TenantId = id
+                TenantId = id,
+                ActorUserId = _userScope.UserId,
+                ActorPlatformRoles = _userScope.PlatformRoles
             },
             cancellationToken);
 
@@ -95,7 +100,9 @@ public sealed class TenantsController : V1ApiControllerBase
             new UpdateTenantRequest
             {
                 TenantId = id,
-                Name = body.Name
+                Name = body.Name,
+                ActorUserId = _userScope.UserId,
+                ActorPlatformRoles = _userScope.PlatformRoles
             },
             cancellationToken);
 
@@ -114,7 +121,9 @@ public sealed class TenantsController : V1ApiControllerBase
                 TenantId = id,
                 Email = body.Email,
                 Roles = body.Roles,
-                InvitedByUserId = _userScope.UserId
+                InvitedByUserId = _userScope.UserId,
+                ActorUserId = _userScope.UserId,
+                ActorPlatformRoles = _userScope.PlatformRoles
             },
             cancellationToken);
 
@@ -136,7 +145,7 @@ public sealed class TenantsController : V1ApiControllerBase
         return Ok(new { membershipId });
     }
 
-    public sealed record CreateTenantBody(string Name, string Key);
+    public sealed record CreateTenantBody(string Name, string Key, Guid? InitialAdministratorUserId);
     public sealed record UpdateTenantBody(string Name);
     public sealed record InviteMemberBody(string Email, IReadOnlyCollection<string> Roles);
     public sealed record AcceptInviteBody(string Token, string IdentityToken);

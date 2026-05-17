@@ -2,6 +2,7 @@ using System.Threading.RateLimiting;
 using System.Text.Json.Serialization;
 using Asp.Versioning;
 using IdPPlatform.API.Middlewares;
+using IdPPlatform.Domain.Constants;
 using IdPPlatform.Infrastructure.Configurations;
 using IdPPlatform.Infrastructure.Extensions;
 using IdPPlatform.Infrastructure.Persistence;
@@ -27,6 +28,11 @@ builder.Services
     });
 
 builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("PlatformAdministrator", policy =>
+        policy.RequireClaim(PlatformRoleDefaults.ClaimType, PlatformRoleDefaults.PlatformAdministrator));
+});
 
 builder.Services.AddRateLimiter(options =>
 {
@@ -50,6 +56,16 @@ builder.Services.AddRateLimiter(options =>
             {
                 PermitLimit = rateLimitOptions.RefreshPermitLimit,
                 Window = TimeSpan.FromMinutes(rateLimitOptions.RefreshWindowMinutes),
+                QueueLimit = 0
+            }));
+
+    options.AddPolicy("platform_bootstrap", context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = rateLimitOptions.BootstrapPermitLimit,
+                Window = TimeSpan.FromMinutes(rateLimitOptions.BootstrapWindowMinutes),
                 QueueLimit = 0
             }));
 });

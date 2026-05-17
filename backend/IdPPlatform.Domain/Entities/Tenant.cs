@@ -12,6 +12,7 @@ public class Tenant : BaseEntity
 
     public ICollection<TenantMembership> Memberships { get; private set; } = new List<TenantMembership>();
     public ICollection<TenantRole> Roles { get; private set; } = new List<TenantRole>();
+    public ICollection<ApplicationTenant> Applications { get; private set; } = new List<ApplicationTenant>();
 
     private Tenant()
     {

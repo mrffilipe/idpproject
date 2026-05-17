@@ -14,5 +14,9 @@ public interface IUserScope
 
     IReadOnlyList<string> TenantRoles { get; }
 
+    IReadOnlyList<string> PlatformRoles { get; }
+
     bool HasAnyTenantRole(params string[] roleKeys);
+
+    bool HasAnyPlatformRole(params string[] roleKeys);
 }

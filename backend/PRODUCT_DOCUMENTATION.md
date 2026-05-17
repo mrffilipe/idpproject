@@ -163,7 +163,8 @@ flowchart LR
     api[API] --> app[Application]
     app --> domain[Domain]
     app --> infra[Infrastructure]
-    infra --> db[(MySQL)]
+    infra --> db[(PostgreSQL)]
+    infra --> redis[(Redis)]
     infra --> firebase[FirebaseAuth]
     infra --> ses[AmazonSES]
 ```
@@ -225,16 +226,24 @@ erDiagram
 ## 9.1 Firebase Authentication
 - Uso: validacao de `identityToken` no exchange e aceite de convite.
 - Integracao: `FirebaseAdmin` (`VerifyIdTokenAsync`).
+- Credenciais: `Firebase:CredentialPath` (quando configurado) ou Application Default Credentials.
+- Projeto: `Firebase:ProjectId` (obrigatorio).
 
-## 9.2 MySQL
-- Persistencia principal via EF Core + Pomelo.
+## 9.2 PostgreSQL
+- Persistencia principal via EF Core + Npgsql.
 - Migracoes versionadas no projeto `Infrastructure`.
 
 ## 9.3 AWS SES
 - Uso: envio de convite por email.
 - Integracao: `AmazonSimpleEmailServiceV2Client`.
+- Config obrigatoria: `Email.FromAddress` e `Email.Region`.
+- Credenciais preferenciais em appsettings: `Email.AccessKeyId`, `Email.SecretAccessKey`, `Email.SessionToken`.
 
-## 9.4 TenancyKit
+## 9.4 Redis
+- Uso: cache de resolucao de tenant por `TenantKey` no `TenantStore`.
+- Config: `Redis.ConnectionString`, `Redis.InstanceName`, `Redis.TenantIdentifierCacheMinutes`.
+
+## 9.5 TenancyKit
 - Uso: resolucao de tenant por claims e filtros de dados tenant-scoped.
 
 ---
@@ -242,6 +251,8 @@ erDiagram
 ## 10. Contratos de API (Resumo)
 
 ## 10.1 Auth
+- `GET /v1/platform/status` (anonimo)
+- `POST /v1/platform/bootstrap` (anonimo, rate-limited, uso unico)
 - `POST /v1/auth/exchange` (anonimo, rate-limited)
 - `POST /v1/auth/refresh` (anonimo, rate-limited)
 - `POST /v1/auth/switch-tenant` (autenticado)
@@ -250,13 +261,13 @@ erDiagram
 - `DELETE /v1/auth/sessions/{sessionId}` (autenticado)
 
 ## 10.2 Tenants
-- `POST /v1/tenants`
+- `POST /v1/tenants` (autenticado + `PlatformAdministrator`)
 - `GET /v1/tenants` (paginado por `page` e `pageSize`)
-- `GET /v1/tenants/{id}`
-- `PATCH /v1/tenants/{id}`
+- `GET /v1/tenants/{id}` (`plat_admin` ou role administrativa `owner`/`admin` no tenant alvo)
+- `PATCH /v1/tenants/{id}` (`plat_admin` ou role administrativa `owner`/`admin` no tenant alvo)
 - `GET /v1/tenants/{id}/roles` (paginado por `page` e `pageSize`)
 - `POST /v1/tenants/{id}/roles`
-- `POST /v1/tenants/{id}/invites`
+- `POST /v1/tenants/{id}/invites` (`plat_admin` ou role administrativa `owner`/`admin` no tenant alvo)
 - `POST /v1/invites/accept` (anonimo)
 
 ## 10.3 Memberships
@@ -266,10 +277,10 @@ erDiagram
 - `DELETE /v1/memberships/{id}`
 
 ## 10.4 Applications
-- `POST /v1/applications`
+- `POST /v1/applications` (autenticado + `PlatformAdministrator`)
 - `GET /v1/applications` (paginado por `page` e `pageSize`)
 - `GET /v1/applications/{id}`
-- `POST /v1/applications/{id}/clients`
+- `POST /v1/applications/{id}/clients` (autenticado; requer `plat_admin` ou role administrativa `owner`/`admin` no tenant alvo)
 
 ## 10.5 Users
 - `GET /v1/users/me`
@@ -296,7 +307,11 @@ sequenceDiagram
     participant Firebase
     participant DB
 
-    Client->>API: POST /auth/exchange
+    Client->>API: GET /platform/status
+    API-->>Client: requiresBootstrap?
+    Client->>API: POST /platform/bootstrap (somente primeira execucao)
+    API-->>Client: root admin + tenant + app + client
+    Client->>API: POST /auth/exchange (apos bootstrap)
     API->>IdPAuth: ExchangeTokenAsync(request)
     IdPAuth->>DB: Validar OAuth client
     IdPAuth->>Firebase: VerifyIdToken
@@ -356,11 +371,13 @@ Claims emitidas no JWT:
 - `tid`: tenant ativo
 - `mid`: membership ativa
 - `trole`: role no tenant; pode aparecer multiplas vezes
+- `prole`: role administrativa de plataforma; pode aparecer multiplas vezes
 - `amr`: metodo de autenticacao
 
 Uso de claims:
 
 - autorizacao por tenant roles
+- autorizacao administrativa de plataforma via `prole=plat_admin`
 - resolucao de tenant no TenancyKit
 - operacoes de sessao por `sid`
 
@@ -377,6 +394,7 @@ Secoes de configuracao:
 - `RateLimit`
 - `Invite`
 - `Email`
+- `EnvironmentVariablesDocumentation`
 
 Parametros criticos:
 
@@ -385,12 +403,15 @@ Parametros criticos:
 - `RateLimit.*`
 - `Invite.ExpirationHours`
 - `Email.FromAddress`
+- `Firebase.ProjectId`
 
 ---
 
 ## 14. Seguranca e Hardening Implementado
 
 - validacao de OAuth client no exchange
+- bootstrap inicial bloqueado apos primeira execucao
+- bootstrap cria configuracoes de negocio via UI (sem seeds de tenant/app/client em migracao)
 - validacao de redirect URI e scopes permitidos
 - PKCE para clients publicos
 - refresh token hash no banco
@@ -421,6 +442,9 @@ Consulta:
 
 ## 16. Regras de Negocio Relevantes
 
+- apenas `plat_admin` cria tenants e applications globais
+- criador do tenant recebe membership `owner` automaticamente no tenant criado
+- criacao de application client exige `plat_admin` ou membership ativa com role `owner`/`admin` no tenant alvo
 - usuario precisa de membership ativa para operar no tenant do client (quando houver memberships)
 - confidential client sem secret valido nao autentica
 - public client sem PKCE nao autentica

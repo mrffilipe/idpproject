@@ -4,7 +4,7 @@ using IdPPlatform.Domain.Exceptions;
 
 namespace IdPPlatform.Domain.Entities;
 
-public class ApplicationClient : TenantEntity
+public class ApplicationClient : BaseEntity
 {
     public Guid ApplicationId { get; private set; }
     public Application Application { get; private set; } = null!;
@@ -21,14 +21,13 @@ public class ApplicationClient : TenantEntity
     }
 
     public ApplicationClient(
-        Guid tenantId,
         Guid applicationId,
         string clientId,
         string? clientSecretHash,
         ClientType clientType,
         string redirectUris,
         string allowedScopes,
-        int accessTokenTtlSeconds) : base(tenantId)
+        int accessTokenTtlSeconds)
     {
         if (applicationId == Guid.Empty || string.IsNullOrWhiteSpace(clientId))
         {

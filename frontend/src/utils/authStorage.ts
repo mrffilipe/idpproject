@@ -11,6 +11,7 @@ export interface AuthSessionStorage {
   tenantId?: string | null
   membershipId?: string | null
   tenantRoles: string[]
+  platformRoles: string[]
 }
 
 function isBrowser(): boolean {
@@ -46,6 +47,7 @@ export function saveAuthSessionFromResult(result: AuthResult): AuthSessionStorag
     tenantId: result.tenantId,
     membershipId: result.membershipId,
     tenantRoles: result.tenantRoles,
+    platformRoles: result.platformRoles,
   }
 
   if (isBrowser()) {
@@ -70,6 +72,7 @@ export function updateAccessTokenFromRefresh(result: AuthResult): void {
     tenantId: result.tenantId,
     membershipId: result.membershipId,
     tenantRoles: result.tenantRoles,
+    platformRoles: result.platformRoles,
   }
 
   if (isBrowser()) {

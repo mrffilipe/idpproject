@@ -4,5 +4,6 @@ public sealed class FirebaseOptions
 {
     public const string Section = "Firebase";
 
-    public required string ProjectId { get; init; }
+    public string ProjectId { get; init; } = string.Empty;
+    public string? CredentialPath { get; init; }
 }

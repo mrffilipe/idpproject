@@ -1,11 +1,13 @@
 import { createBrowserRouter } from 'react-router'
 import { AppLayout } from './components/AppLayout'
-import { requireAuthLoader, loginLoader } from './routes/loaders'
+import { RouteHydrateFallback } from './components/RouteHydrateFallback'
+import { bootstrapLoader, requireAuthLoader, loginLoader } from './routes/loaders'
 import {
   AcceptInvitePage,
   ApplicationDetailPage,
   ApplicationsPage,
   AuditLogsPage,
+  BootstrapPage,
   HomePage,
   JwksPage,
   LoginPage,
@@ -19,8 +21,15 @@ import {
 
 export const router = createBrowserRouter([
   {
+    path: '/bootstrap',
+    loader: bootstrapLoader,
+    HydrateFallback: RouteHydrateFallback,
+    Component: BootstrapPage,
+  },
+  {
     path: '/login',
     loader: loginLoader,
+    HydrateFallback: RouteHydrateFallback,
     Component: LoginPage,
   },
   {
@@ -28,12 +37,9 @@ export const router = createBrowserRouter([
     Component: AcceptInvitePage,
   },
   {
-    path: '/jwks',
-    Component: JwksPage,
-  },
-  {
     path: '/',
     loader: requireAuthLoader,
+    HydrateFallback: RouteHydrateFallback,
     Component: AppLayout,
     children: [
       { index: true, Component: HomePage },
@@ -45,6 +51,7 @@ export const router = createBrowserRouter([
       { path: 'applications', Component: ApplicationsPage },
       { path: 'applications/:applicationId', Component: ApplicationDetailPage },
       { path: 'audit-logs', Component: AuditLogsPage },
+      { path: 'jwks', Component: JwksPage },
       { path: '*', Component: NotFoundPage },
     ],
   },
