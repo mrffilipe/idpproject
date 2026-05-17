@@ -1,7 +1,7 @@
 import GoogleIcon from '@mui/icons-material/Google'
 import { Button, type ButtonProps } from '@mui/material'
 
-interface GoogleSignInButtonProps extends Omit<ButtonProps, 'startIcon'> {
+interface GoogleSignInButtonProps extends Omit<ButtonProps, 'startIcon' | 'variant'> {
   loading?: boolean
   loadingLabel?: string
   label?: string
@@ -12,21 +12,22 @@ export function GoogleSignInButton({
   loadingLabel = 'Entrando...',
   label = 'Continuar com Google',
   disabled,
+  color = 'primary',
+  size = 'large',
+  sx,
   ...props
 }: GoogleSignInButtonProps) {
   return (
     <Button
-      variant="contained"
-      size="large"
+      variant="outlined"
+      color={color}
+      size={size}
       fullWidth
       startIcon={<GoogleIcon />}
       disabled={disabled || loading}
       sx={{
         py: 1.25,
-        background: 'linear-gradient(135deg, #4f46e5 0%, #6366f1 100%)',
-        '&:hover': {
-          background: 'linear-gradient(135deg, #4338ca 0%, #4f46e5 100%)',
-        },
+        ...sx,
       }}
       {...props}
     >

@@ -1,6 +1,16 @@
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import { Alert, Avatar, Box, Button, Divider, Stack, TextField, Typography } from '@mui/material'
 import { useEffect, useState } from 'react'
-import { FeedbackAlerts, FormGrid, FormGridItem, PageHeader, SectionCard, StatusChip } from '../components/ui'
+import {
+  FeedbackAlerts,
+  FormGrid,
+  FormGridItem,
+  FormSection,
+  PageHeader,
+  ResourceDialog,
+  SectionCard,
+  StatusChip,
+} from '../components/ui'
 import { getMe, listMyMemberships, updateMe } from '../services'
 import type { User, UserMembership } from '../types'
 import { getApiErrorMessage } from '../utils/apiError'
@@ -13,6 +23,7 @@ export function ProfilePage() {
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [editOpen, setEditOpen] = useState(false)
 
   useEffect(() => {
     void loadProfile()
@@ -32,6 +43,12 @@ export function ProfilePage() {
     }
   }
 
+  function openEditDialog(): void {
+    setDisplayName(user?.displayName ?? '')
+    setPhotoUrl(user?.photoUrl ?? '')
+    setEditOpen(true)
+  }
+
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault()
     setLoading(true)
@@ -43,6 +60,7 @@ export function ProfilePage() {
         photoUrl: photoUrl || null,
       })
       setMessage('Perfil atualizado com sucesso.')
+      setEditOpen(false)
       await loadProfile()
     } catch (submitError) {
       setError(getApiErrorMessage(submitError))
@@ -55,12 +73,20 @@ export function ProfilePage() {
 
   return (
     <Stack spacing={3}>
-      <PageHeader title="Meu perfil" description="Gerencie suas informações pessoais e visualize suas memberships." />
+      <PageHeader
+        title="Meu perfil"
+        description="Gerencie suas informações pessoais e visualize suas memberships."
+        actions={
+          <Button startIcon={<EditOutlinedIcon />} onClick={openEditDialog}>
+            Editar perfil
+          </Button>
+        }
+      />
       <FeedbackAlerts success={message} error={error} />
 
       <SectionCard title="Identidade">
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3} sx={{ alignItems: { sm: 'center' }, mb: 2 }}>
-          <Avatar src={photoUrl || undefined} sx={{ width: 72, height: 72, bgcolor: 'primary.main', fontSize: '1.5rem' }}>
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3} sx={{ alignItems: { sm: 'center' } }}>
+          <Avatar src={user?.photoUrl || photoUrl || undefined} sx={{ width: 72, height: 72, bgcolor: 'primary.main', fontSize: '1.5rem' }}>
             {initials}
           </Avatar>
           <Box>
@@ -69,20 +95,6 @@ export function ProfilePage() {
               {user?.email ?? '—'}
             </Typography>
           </Box>
-        </Stack>
-
-        <Stack spacing={2} component="form" onSubmit={handleSubmit}>
-          <FormGrid>
-            <FormGridItem>
-              <TextField label="Nome de exibição" value={displayName} onChange={(e) => setDisplayName(e.target.value)} required fullWidth />
-            </FormGridItem>
-            <FormGridItem>
-              <TextField label="URL da foto" value={photoUrl} onChange={(e) => setPhotoUrl(e.target.value)} fullWidth />
-            </FormGridItem>
-          </FormGrid>
-          <Button type="submit" variant="contained" disabled={loading} sx={{ alignSelf: 'flex-start' }}>
-            {loading ? 'Salvando...' : 'Salvar alterações'}
-          </Button>
         </Stack>
       </SectionCard>
 
@@ -109,6 +121,27 @@ export function ProfilePage() {
           </Stack>
         )}
       </SectionCard>
+
+      <ResourceDialog
+        open={editOpen}
+        onClose={() => setEditOpen(false)}
+        title="Editar perfil"
+        description="Atualize como você aparece na plataforma."
+        loading={loading}
+        submitLabel="Salvar alterações"
+        onSubmit={handleSubmit}
+      >
+        <FormSection title="Dados pessoais">
+          <FormGrid>
+            <FormGridItem>
+              <TextField label="Nome de exibição" value={displayName} onChange={(e) => setDisplayName(e.target.value)} required fullWidth />
+            </FormGridItem>
+            <FormGridItem>
+              <TextField label="URL da foto" value={photoUrl} onChange={(e) => setPhotoUrl(e.target.value)} fullWidth />
+            </FormGridItem>
+          </FormGrid>
+        </FormSection>
+      </ResourceDialog>
     </Stack>
   )
 }

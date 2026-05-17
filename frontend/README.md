@@ -57,7 +57,7 @@ npm run preview  # preview local do build
 | `src/config/` | Configuração de ambiente e instâncias Axios |
 | `src/routes.tsx` | Definição do router em Data Mode |
 | `src/routes/loaders.ts` | Loaders de autenticação e proteção de rotas |
-| `src/theme/` | Tema MUI global |
+| `src/theme/` | Tema MUI global (claro/escuro, tokens e overrides) |
 | `src/types/` | Tipos de request/response e contratos comuns |
 | `src/utils/` | Storage de sessão/tenant, tratamento de erro e utilitários |
 
@@ -76,3 +76,15 @@ O frontend cobre os recursos da API em telas/fluxos para:
 - applications (criar, listar, detalhar, criar client)
 - audit logs
 - JWKS (`/.well-known/jwks.json`)
+
+## Padrões de UI
+
+- **Botões de ação:** padrão global `outlined` (tema MUI). Texto e borda na cor do `color`. Hover/active com transição suave e leve `scale` no clique. Evite `variant="contained"` salvo exceção explícita.
+- **Botões Voltar:** use `BackButton` (`variant="text"`, sem borda). Agrupe com ações primárias em `FormActions` (alinhamento à **direita** do container). Ordem típica: `BackButton` → botão primário.
+- **Ações de formulário:** envolva submits em `FormActions` para manter botões à direita. Exceção: ação única isolada/centralizada (ex.: etapa 1 do bootstrap com Google).
+- **Checkbox + rótulo:** use `CheckboxField` ou `FormControlLabel` (tema com `alignItems: 'center'` — checkbox centralizado verticalmente ao texto).
+- **Formulários longos:** agrupe campos em `FormSection` (título + descrição opcional + campos).
+- **Logo provisória:** ícone `ShieldOutlined` em `PlatformLogo` até haver marca definitiva.
+- **Telas de auth:** `AuthLayout` centraliza logo, título e conteúdo; bootstrap usa `AuthStepper` e largura `layout.bootstrapMaxWidth`.
+- **Layout autenticado:** `PlatformBrand` no AppBar e no topo do menu lateral; hambúrguer abre drawer `temporary` em overlay (backdrop sobre AppBar e conteúdo, sem empurrar a tela). Ícones do menu herdam a cor do texto (`MuiListItemIcon` + `color: inherit`). Conteúdo das páginas limitado a `layout.contentMaxWidth` (1200px) e centralizado.
+- **Páginas de listagem:** padrão Sessions/JWKS — `PageHeader` + `FeedbackAlerts` + `SectionCard` com `DataTable`. Criar/editar em `ResourceDialog` ou `SteppedFormDialog` (formulários com várias etapas), com `FormSection` + `FormGrid`. Botão primário no header; edição por linha na tabela.

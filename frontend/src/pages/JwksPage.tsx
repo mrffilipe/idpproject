@@ -42,7 +42,7 @@ export function JwksPage() {
         title="JWKS"
         description="Chaves públicas usadas para validar tokens JWT emitidos pela plataforma."
         actions={
-          <Button variant="contained" onClick={() => void handleLoad()} disabled={loading}>
+          <Button onClick={() => void handleLoad()} disabled={loading}>
             {loading ? 'Carregando...' : 'Carregar JWKS'}
           </Button>
         }

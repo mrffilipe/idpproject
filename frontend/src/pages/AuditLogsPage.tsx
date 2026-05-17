@@ -1,6 +1,6 @@
 import { Button, Stack, TableCell, TableRow, TextField, Tooltip, Typography } from '@mui/material'
 import { useState } from 'react'
-import { DataTable, FeedbackAlerts, FormGrid, FormGridItem, PageHeader, SectionCard } from '../components/ui'
+import { DataTable, FeedbackAlerts, FormActions, FormGrid, FormGridItem, PageHeader, SectionCard } from '../components/ui'
 import { listAuditLogs } from '../services'
 import type { AuditLogItem } from '../types'
 import { getApiErrorMessage } from '../utils/apiError'
@@ -47,9 +47,9 @@ export function AuditLogsPage() {
               <TextField label="User Id" value={userId} onChange={(e) => setUserId(e.target.value)} fullWidth />
             </FormGridItem>
           </FormGrid>
-          <Button variant="contained" type="submit" sx={{ alignSelf: 'flex-start' }}>
-            Buscar logs
-          </Button>
+          <FormActions>
+            <Button type="submit">Buscar logs</Button>
+          </FormActions>
         </Stack>
       </SectionCard>
 

@@ -1,7 +1,17 @@
-import { Alert, Button, MenuItem, Stack, TableCell, TableRow, TextField } from '@mui/material'
+import AddIcon from '@mui/icons-material/Add'
+import { Button, MenuItem, Stack, TableCell, TableRow, TextField } from '@mui/material'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
-import { DataTable, FeedbackAlerts, FormGrid, FormGridItem, PageHeader, SectionCard } from '../components/ui'
+import {
+  DataTable,
+  FeedbackAlerts,
+  FormGrid,
+  FormGridItem,
+  FormSection,
+  PageHeader,
+  ResourceDialog,
+  SectionCard,
+} from '../components/ui'
 import { useAuth } from '../contexts/AuthContext'
 import { createApplication, listApplications } from '../services'
 import { ApplicationType, type Application } from '../types'
@@ -19,6 +29,8 @@ export function ApplicationsPage() {
   const [items, setItems] = useState<Application[]>([])
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+  const [createOpen, setCreateOpen] = useState(false)
+  const [loading, setLoading] = useState(false)
 
   const [name, setName] = useState('')
   const [slug, setSlug] = useState('')
@@ -38,28 +50,46 @@ export function ApplicationsPage() {
     }
   }
 
+  function openCreateDialog(): void {
+    setName('')
+    setSlug('')
+    setType(ApplicationType.Web)
+    setCreateOpen(true)
+  }
+
   async function handleCreate(event: React.FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault()
+    setLoading(true)
     setError(null)
     setSuccess(null)
     try {
       const created = await createApplication({ name, slug, type })
       setSuccess(`Application criada: ${created.id}`)
-      setName('')
-      setSlug('')
-      setType(ApplicationType.Web)
+      setCreateOpen(false)
       await loadApplications()
     } catch (createError) {
       setError(getApiErrorMessage(createError))
+    } finally {
+      setLoading(false)
     }
   }
 
   return (
     <Stack spacing={3}>
-      <PageHeader title="Applications" description="Gerencie aplicações OAuth registradas na plataforma." />
+      <PageHeader
+        title="Applications"
+        description="Gerencie aplicações OAuth registradas na plataforma."
+        actions={
+          isPlatformAdministrator ? (
+            <Button startIcon={<AddIcon />} onClick={openCreateDialog}>
+              Nova application
+            </Button>
+          ) : null
+        }
+      />
       <FeedbackAlerts success={success} error={error} />
 
-      <SectionCard title="Lista de aplicações">
+      <SectionCard title="Aplicações cadastradas">
         <DataTable
           columns={[
             { id: 'id', label: 'Id', minWidth: 120 },
@@ -75,7 +105,7 @@ export function ApplicationsPage() {
               <TableCell>{item.slug}</TableCell>
               <TableCell>{item.type}</TableCell>
               <TableCell align="right">
-                <Button component={Link} to={`/applications/${item.id}`} size="small" variant="outlined">
+                <Button component={Link} to={`/applications/${item.id}`} size="small">
                   Detalhes
                 </Button>
               </TableCell>
@@ -85,40 +115,41 @@ export function ApplicationsPage() {
         />
       </SectionCard>
 
-      <SectionCard title="Criar application">
-        {isPlatformAdministrator ? (
-          <Stack spacing={2} component="form" onSubmit={handleCreate}>
-            <FormGrid>
-              <FormGridItem>
-                <TextField label="Nome" value={name} onChange={(event) => setName(event.target.value)} required fullWidth />
-              </FormGridItem>
-              <FormGridItem>
-                <TextField label="Slug" value={slug} onChange={(event) => setSlug(event.target.value)} required fullWidth />
-              </FormGridItem>
-              <FormGridItem>
-                <TextField
-                  select
-                  label="Tipo"
-                  value={type}
-                  onChange={(event) => setType(Number(event.target.value) as ApplicationType)}
-                  fullWidth
-                >
-                  {typeOptions.map((option) => (
-                    <MenuItem key={option.value} value={option.value}>
-                      {option.label}
-                    </MenuItem>
-                  ))}
-                </TextField>
-              </FormGridItem>
-            </FormGrid>
-            <Button type="submit" variant="contained" sx={{ alignSelf: 'flex-start' }}>
-              Criar
-            </Button>
-          </Stack>
-        ) : (
-          <Alert severity="info">Apenas administradores de plataforma podem criar applications.</Alert>
-        )}
-      </SectionCard>
+      <ResourceDialog
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        title="Nova application"
+        description="Registre uma aplicação OAuth na plataforma."
+        loading={loading}
+        submitLabel="Criar"
+        onSubmit={handleCreate}
+      >
+        <FormSection title="Identificação" description="Nome público e slug único da aplicação.">
+          <FormGrid>
+            <FormGridItem>
+              <TextField label="Nome" value={name} onChange={(event) => setName(event.target.value)} required fullWidth />
+            </FormGridItem>
+            <FormGridItem>
+              <TextField label="Slug" value={slug} onChange={(event) => setSlug(event.target.value)} required fullWidth />
+            </FormGridItem>
+            <FormGridItem>
+              <TextField
+                select
+                label="Tipo"
+                value={type}
+                onChange={(event) => setType(Number(event.target.value) as ApplicationType)}
+                fullWidth
+              >
+                {typeOptions.map((option) => (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </FormGridItem>
+          </FormGrid>
+        </FormSection>
+      </ResourceDialog>
     </Stack>
   )
 }

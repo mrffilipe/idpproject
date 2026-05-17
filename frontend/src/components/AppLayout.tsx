@@ -29,12 +29,15 @@ import {
 import type { ReactElement } from 'react'
 import { useMemo, useState } from 'react'
 import { Link, Outlet, useLocation } from 'react-router'
+import { PlatformBrand } from './ui/PlatformBrand'
 import { useAuth } from '../contexts/AuthContext'
 import { useThemeMode } from '../contexts/ThemeModeContext'
 import { useTenant } from '../contexts/TenantContext'
 import { logout } from '../services'
 import { layout } from '../theme'
 import { getAuthSession } from '../utils/authStorage'
+
+const appBarHeight = 64
 
 interface NavItem {
   to: string
@@ -92,7 +95,7 @@ export function AppLayout() {
   const { logoutLocal, email } = useAuth()
   const { tenantId } = useTenant()
   const { mode, toggleMode } = useThemeMode()
-  const [openMobileDrawer, setOpenMobileDrawer] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const currentPath = useMemo(() => location.pathname, [location.pathname])
 
@@ -108,8 +111,32 @@ export function AppLayout() {
     }
   }
 
+  function handleToggleSidebar(): void {
+    setSidebarOpen((prev) => !prev)
+  }
+
+  function handleCloseSidebar(): void {
+    setSidebarOpen(false)
+  }
+
+  const sidebarHeader = (
+    <Box
+      sx={{
+        px: 2,
+        height: appBarHeight,
+        flexShrink: 0,
+        display: 'flex',
+        alignItems: 'center',
+        borderBottom: 1,
+        borderColor: 'divider',
+      }}
+    >
+      <PlatformBrand logoSize={36} to="/" />
+    </Box>
+  )
+
   const navList = (
-    <List sx={{ px: 1.5, py: 1 }}>
+    <List sx={{ px: 1.5, py: 1, flex: 1, overflowY: 'auto' }}>
       {navGroups.map((group, groupIndex) => (
         <Box key={group.label}>
           {groupIndex > 0 ? <Divider sx={{ my: 1.5 }} /> : null}
@@ -126,9 +153,9 @@ export function AppLayout() {
               component={Link}
               to={item.to}
               selected={isNavActive(currentPath, item.to)}
-              onClick={() => setOpenMobileDrawer(false)}
+              onClick={handleCloseSidebar}
             >
-              <ListItemIcon sx={{ minWidth: 40 }}>{item.icon}</ListItemIcon>
+              <ListItemIcon>{item.icon}</ListItemIcon>
               <ListItemText primary={item.label} slotProps={{ primary: { sx: { fontWeight: 500 } } }} />
             </ListItemButton>
           ))}
@@ -139,94 +166,86 @@ export function AppLayout() {
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh' }}>
-      <AppBar position="fixed" color="inherit" elevation={0}>
-        <Toolbar sx={{ gap: 1 }}>
-          <IconButton
-            edge="start"
-            onClick={() => setOpenMobileDrawer((prev) => !prev)}
-            sx={{ display: { md: 'none' } }}
-            aria-label="Abrir menu"
-          >
-            <MenuIcon />
-          </IconButton>
-          <Typography variant="h6" sx={{ fontWeight: 700, letterSpacing: '-0.02em' }}>
-            IdP Platform
-          </Typography>
-          <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center', gap: 1 }}>
-            {tenantId ? (
-              <Chip
-                size="small"
-                label={`Tenant: ${tenantId.slice(0, 8)}…`}
-                variant="outlined"
-                sx={{ display: { xs: 'none', sm: 'flex' } }}
-              />
-            ) : (
-              <Chip size="small" label="Sem tenant" variant="outlined" color="warning" sx={{ display: { xs: 'none', sm: 'flex' } }} />
-            )}
-            <Tooltip title={mode === 'light' ? 'Modo escuro' : 'Modo claro'}>
-              <IconButton onClick={toggleMode} aria-label="Alternar tema">
-                {mode === 'light' ? <DarkModeOutlinedIcon /> : <LightModeOutlinedIcon />}
-              </IconButton>
-            </Tooltip>
-            {email ? (
-              <Typography variant="body2" color="text.secondary" sx={{ display: { xs: 'none', lg: 'block' }, maxWidth: 180 }} noWrap>
-                {email}
-              </Typography>
-            ) : null}
-            <Tooltip title="Sair">
-              <IconButton onClick={() => void handleLogout()} aria-label="Logout" color="inherit">
-                <LogoutOutlinedIcon />
-              </IconButton>
-            </Tooltip>
-          </Box>
-        </Toolbar>
-      </AppBar>
-
-      <Box component="nav" sx={{ width: { md: layout.sidebarWidth }, flexShrink: { md: 0 } }}>
-        <Drawer
-          variant="temporary"
-          open={openMobileDrawer}
-          onClose={() => setOpenMobileDrawer(false)}
-          ModalProps={{ keepMounted: true }}
-          sx={{
-            display: { xs: 'block', md: 'none' },
-            '& .MuiDrawer-paper': {
-              boxSizing: 'border-box',
-              width: layout.sidebarWidth,
-              pt: 8,
-            },
-          }}
-        >
-          {navList}
-        </Drawer>
-        <Drawer
-          variant="permanent"
-          sx={{
-            display: { xs: 'none', md: 'block' },
-            '& .MuiDrawer-paper': {
-              boxSizing: 'border-box',
-              width: layout.sidebarWidth,
-              pt: 8,
-            },
-          }}
-          open
-        >
-          {navList}
-        </Drawer>
-      </Box>
-
-      <Box
-        component="main"
+      <Drawer
+        variant="temporary"
+        open={sidebarOpen}
+        onClose={handleCloseSidebar}
+        ModalProps={{ keepMounted: true }}
         sx={{
-          flexGrow: 1,
-          width: { md: `calc(100% - ${layout.sidebarWidth}px)` },
-          mt: 8,
-          px: { xs: 2, md: 4 },
-          py: 3,
+          zIndex: (theme) => theme.zIndex.modal,
+          '& .MuiBackdrop-root': {
+            backgroundColor: 'rgba(0, 0, 0, 0.45)',
+          },
+          '& .MuiDrawer-paper': {
+            boxSizing: 'border-box',
+            width: layout.sidebarWidth,
+            top: 0,
+            height: '100vh',
+            display: 'flex',
+            flexDirection: 'column',
+          },
         }}
       >
-        <Box sx={{ maxWidth: layout.contentMaxWidth, mx: 'auto' }}>
-          <Outlet />
+        {sidebarHeader}
+        {navList}
+      </Drawer>
+
+      <Box sx={{ display: 'flex', flexDirection: 'column', flexGrow: 1, minWidth: 0, width: '100%' }}>
+        <AppBar position="fixed" color="inherit" elevation={0} sx={{ width: '100%', left: 0 }}>
+          <Toolbar sx={{ gap: 1, minHeight: appBarHeight, color: 'text.primary' }}>
+            <Tooltip title={sidebarOpen ? 'Recolher menu' : 'Abrir menu'}>
+              <IconButton
+                edge="start"
+                color="inherit"
+                onClick={handleToggleSidebar}
+                aria-label={sidebarOpen ? 'Recolher menu' : 'Abrir menu'}
+              >
+                <MenuIcon />
+              </IconButton>
+            </Tooltip>
+            <PlatformBrand logoSize={32} to="/" />
+            <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center', gap: 1 }}>
+              {tenantId ? (
+                <Chip
+                  size="small"
+                  label={`Tenant: ${tenantId.slice(0, 8)}…`}
+                  variant="outlined"
+                  sx={{ display: { xs: 'none', sm: 'flex' } }}
+                />
+              ) : (
+                <Chip size="small" label="Sem tenant" variant="outlined" color="warning" sx={{ display: { xs: 'none', sm: 'flex' } }} />
+              )}
+              <Tooltip title={mode === 'light' ? 'Modo escuro' : 'Modo claro'}>
+                <IconButton color="inherit" onClick={toggleMode} aria-label="Alternar tema">
+                  {mode === 'light' ? <DarkModeOutlinedIcon /> : <LightModeOutlinedIcon />}
+                </IconButton>
+              </Tooltip>
+              {email ? (
+                <Typography variant="body2" color="text.secondary" sx={{ display: { xs: 'none', lg: 'block' }, maxWidth: 180 }} noWrap>
+                  {email}
+                </Typography>
+              ) : null}
+              <Tooltip title="Sair">
+                <IconButton onClick={() => void handleLogout()} aria-label="Logout" color="inherit">
+                  <LogoutOutlinedIcon />
+                </IconButton>
+              </Tooltip>
+            </Box>
+          </Toolbar>
+        </AppBar>
+
+        <Box
+          component="main"
+          sx={{
+            flexGrow: 1,
+            mt: `${appBarHeight}px`,
+            px: { xs: 2, sm: 3, lg: 4 },
+            py: 3,
+          }}
+        >
+          <Box sx={{ width: '100%', maxWidth: layout.contentMaxWidth, mx: 'auto' }}>
+            <Outlet />
+          </Box>
         </Box>
       </Box>
     </Box>

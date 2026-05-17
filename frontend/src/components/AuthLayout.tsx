@@ -1,7 +1,7 @@
-import LockOutlinedIcon from '@mui/icons-material/LockOutlined'
 import { Box, Paper, Stack, Typography } from '@mui/material'
 import type { PropsWithChildren } from 'react'
 import { useThemeMode } from '../contexts/ThemeModeContext'
+import { PlatformLogo } from './ui/PlatformLogo'
 import { getAuthBackground, layout } from '../theme'
 
 interface AuthLayoutProps extends PropsWithChildren {
@@ -30,24 +30,10 @@ export function AuthLayout({
         background: getAuthBackground(mode),
       }}
     >
-      <Box sx={{ width: '100%', maxWidth }}>
-        <Stack spacing={3} sx={{ mb: 3, textAlign: 'center' }}>
-          <Box
-            sx={{
-              mx: 'auto',
-              width: 56,
-              height: 56,
-              borderRadius: 2,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              bgcolor: 'primary.main',
-              color: 'primary.contrastText',
-            }}
-          >
-            <LockOutlinedIcon fontSize="large" />
-          </Box>
-          <Stack spacing={0.5}>
+      <Box sx={{ width: '100%', maxWidth, mx: 'auto' }}>
+        <Stack spacing={2.5} sx={{ mb: 3, alignItems: 'center', textAlign: 'center' }}>
+          <PlatformLogo size={68} />
+          <Stack spacing={0.5} sx={{ width: '100%' }}>
             <Typography variant="h4" component="h1">
               {title}
             </Typography>

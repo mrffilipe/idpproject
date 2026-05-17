@@ -1,7 +1,7 @@
 import { Button, Stack, TextField, Typography } from '@mui/material'
 import { useState } from 'react'
 import { AuthLayout } from '../components/AuthLayout'
-import { FeedbackAlerts } from '../components/ui'
+import { FeedbackAlerts, FormActions } from '../components/ui'
 import { acceptInvite } from '../services'
 import { getApiErrorMessage } from '../utils/apiError'
 
@@ -47,9 +47,11 @@ export function AcceptInvitePage() {
           multiline
           minRows={2}
         />
-        <Button type="submit" variant="contained" size="large" disabled={loading}>
-          {loading ? 'Processando...' : 'Aceitar convite'}
-        </Button>
+        <FormActions>
+          <Button type="submit" size="large" disabled={loading} sx={{ py: 1.25, px: 3 }}>
+            {loading ? 'Processando...' : 'Aceitar convite'}
+          </Button>
+        </FormActions>
       </Stack>
     </AuthLayout>
   )

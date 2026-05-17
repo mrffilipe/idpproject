@@ -14,7 +14,7 @@ export function NotFoundPage() {
             A rota solicitada não existe nesta aplicação ou você não tem permissão para acessá-la.
           </Typography>
         </Stack>
-        <Button component={Link} to="/" variant="contained" size="large">
+        <Button component={Link} to="/" size="large">
           Voltar ao dashboard
         </Button>
       </Stack>

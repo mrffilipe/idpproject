@@ -75,7 +75,7 @@ export function HomePage() {
             <Card sx={{ height: '100%' }}>
               <CardActionArea component={Link} to={module.to} sx={{ height: '100%' }}>
                 <CardContent>
-                  <Stack direction="row" spacing={2} sx={{ alignItems: 'flex-start' }}>
+                  <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
                     <Box
                       sx={{
                         p: 1,
@@ -83,21 +83,20 @@ export function HomePage() {
                         bgcolor: 'primary.main',
                         color: 'primary.contrastText',
                         display: 'flex',
+                        flexShrink: 0,
                       }}
                     >
                       {module.icon}
                     </Box>
-                    <Stack spacing={0.5} sx={{ flex: 1 }}>
-                      <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
-                        <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                          {module.label}
-                        </Typography>
-                        <ChevronRightIcon color="action" fontSize="small" />
-                      </Stack>
+                    <Stack spacing={0.5} sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                        {module.label}
+                      </Typography>
                       <Typography variant="body2" color="text.secondary">
                         {module.description}
                       </Typography>
                     </Stack>
+                    <ChevronRightIcon fontSize="small" sx={{ color: 'text.secondary', flexShrink: 0 }} />
                   </Stack>
                 </CardContent>
               </CardActionArea>
